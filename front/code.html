@@ -1,0 +1,600 @@
+<!DOCTYPE html><html lang="zh-CN" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"error":"#ba1a1a","surface-bright":"#faf8ff","on-primary":"#ffffff","on-error":"#ffffff","primary":"#3525cd","secondary":"#6b38d4","on-tertiary-fixed":"#002113","on-tertiary-fixed-variant":"#005236","tertiary-container":"#006e4b","surface-dim":"#d2d9f4","on-secondary-container":"#fffbff","on-surface":"#131b2e","on-primary-fixed-variant":"#3323cc","primary-fixed-dim":"#c3c0ff","surface-container":"#eaedff","surface-container-lowest":"#ffffff","surface-container-high":"#e2e7ff","on-tertiary":"#ffffff","on-background":"#131b2e","secondary-container":"#8455ef","on-secondary-fixed-variant":"#5516be","tertiary-fixed":"#6ffbbe","on-primary-container":"#dad7ff","primary-container":"#4f46e5","surface-variant":"#dae2fd","outline":"#777587","surface-tint":"#4d44e3","on-tertiary-container":"#67f4b7","outline-variant":"#c7c4d8","on-secondary-fixed":"#23005c","error-container":"#ffdad6","surface":"#faf8ff","inverse-surface":"#283044","secondary-fixed-dim":"#d0bcff","inverse-on-surface":"#eef0ff","background":"#faf8ff","tertiary":"#005338","on-error-container":"#93000a","surface-container-low":"#f2f3ff","on-surface-variant":"#464555","primary-fixed":"#e2dfff","tertiary-fixed-dim":"#4edea3","secondary-fixed":"#e9ddff","on-primary-fixed":"#0f0069","on-secondary":"#ffffff","surface-container-highest":"#dae2fd","inverse-primary":"#c3c0ff"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-lg":"1.25rem","space-sm":"0.5rem","space-xl":"2rem","gutter":"1.5rem","margin":"2rem","space-md":"0.75rem","space-xs":"0.25rem"},"fontFamily":{"code-inline":["JetBrains Mono"],"label-sm":["JetBrains Mono"],"headline-lg":["Inter"],"body-md":["Inter"],"headline-md":["Inter"],"headline-lg-mobile":["Inter"],"code-block":["JetBrains Mono"],"label-md":["JetBrains Mono"],"body-sm":["Inter"],"headline-sm":["Inter"],"body-lg":["Inter"]},"fontSize":{"code-inline":["13px",{"lineHeight":"18px","fontWeight":"400"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.03em","fontWeight":"500"}],"headline-lg":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"headline-md":["24px",{"lineHeight":"32px","letterSpacing":"-0.015em","fontWeight":"600"}],"headline-lg-mobile":["26px",{"lineHeight":"34px","letterSpacing":"-0.015em","fontWeight":"600"}],"code-block":["13px",{"lineHeight":"20px","fontWeight":"400"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"500"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"headline-sm":["18px",{"lineHeight":"26px","letterSpacing":"-0.01em","fontWeight":"600"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}]}}}}</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-space-md flex items-center gap-space-sm bg-surface-container-lowest"><img alt="Pi Teacher Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U3jRc9f5czwL9qIHTAaqw05afbPf7scfN0HidhUT9bJBUZI7sUg8RwJnVfCxrR6Jq8YPzJheaXMz5uFunm39tBoh5Y0xIvZaVjKV4shkZfgql5_53e7yjXrioQ2AWljehbztPklf7LN4OPx_5MZfK9WL76Tr3QQZBIH0oLzqkIIMwXN3tUdZDmhPkheZTGMffIWuULzHb7pMCZ5h1UWB2KHAHZELX9xfpryJMthVoC553bUYsSP5PVkQ"><div class="flex flex-col min-w-0"><span class="font-headline-sm text-headline-sm text-on-surface truncate">Pi Teacher</span><span class="font-label-sm text-label-sm text-on-surface-variant truncate">FSRS Spaced Repetition</span></div></div><div class="flex-1 overflow-y-auto px-space-sm py-space-sm"><nav class="flex flex-col gap-2 p-1.5" data-active-classes="bg-primary-container text-on-primary font-semibold shadow-sm"><a aria-current="page" class="group relative flex items-center justify-between px-3.5 py-3 rounded-lg bg-primary-container text-on-primary font-semibold shadow-sm transition-all duration-200" data-path="dashboard" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-[20px]">space_dashboard</span><span class="font-body-md text-body-md tracking-tight">首页仪表盘</span></div><span class="w-1.5 h-1.5 rounded-full bg-surface-bright"></span></a><a class="group relative flex items-center justify-between px-3.5 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all duration-200" data-path="review" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-primary transition-colors">repeat</span><span class="font-body-md text-body-md font-medium">卡片复习&nbsp;&nbsp;</span></div><span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-bold">28</span></a><a class="group relative flex items-center justify-between px-3.5 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all duration-200" data-path="cards" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-primary transition-colors">style</span><span class="font-body-md text-body-md font-medium">卡片管理</span></div><span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-medium">412</span></a><a class="group relative flex items-center justify-between px-3.5 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all duration-200" data-path="topics" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-primary transition-colors">folder_special</span><span class="font-body-md text-body-md font-medium">知识分类</span></div><span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-medium">14</span></a><a class="group relative flex items-center justify-between px-3.5 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all duration-200" data-path="glossary" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-primary transition-colors">menu_book</span><span class="font-body-md text-body-md font-medium">术语表</span></div><span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-medium">86</span></a><a class="group relative flex items-center justify-between px-3.5 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all duration-200" data-path="approvals" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-secondary transition-colors">smart_toy</span><span class="font-body-md text-body-md font-medium">AI 审批中心</span></div><span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed font-bold">3 待审批</span></a><div class="my-2 mx-2 h-[1px] bg-surface-container-high"></div><a class="group relative flex items-center justify-between px-3.5 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all duration-200" data-path="trash" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-error transition-colors">delete</span><span class="font-body-md text-body-md font-medium">回收站</span></div></a><a class="group relative flex items-center justify-between px-3.5 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all duration-200" data-path="profile" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-primary transition-colors">manage_accounts</span><span class="font-body-md text-body-md font-medium">个人信息与偏好</span></div></a><a class="group relative flex items-center justify-between px-3.5 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all duration-200" data-path="settings" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-primary transition-colors">settings</span><span class="font-body-md text-body-md font-medium">系统设置</span></div></a></nav></div><div class="p-space-sm flex flex-col gap-space-sm bg-surface-container-low"><div class="p-space-sm rounded-lg bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] flex flex-col gap-1"></div><div class="flex items-center justify-between p-space-xs"><div class="flex items-center gap-space-sm min-w-0"><div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-headline-sm text-headline-sm text-primary">A</div><div class="flex flex-col min-w-0"><span class="font-body-sm text-body-sm font-semibold text-on-surface truncate">Alex Chen</span><span class="font-label-sm text-label-sm text-on-surface-variant truncate">alex@piteacher.ai</span></div></div><a class="text-on-surface-variant hover:text-on-surface" data-path="settings" href="#"><span class="material-symbols-outlined text-[18px]">more_vert</span></a></div></div></aside><div class="pl-72"><main class="relative pt-8 w-full px-gutter bg-surface min-h-screen"><div class="flex flex-col w-full pb-space-xl">
+<!-- Inspiring Zen Quote Callout Banner -->
+<div class="mb-space-lg w-full">
+<div class="relative overflow-hidden rounded-xl bg-gradient-to-r from-surface-container-lowest via-indigo-50/70 to-surface-container-low border border-indigo-100/80 shadow-sm px-space-md py-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+<div class="flex items-center gap-3 min-w-0 flex-1">
+<div class="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+<svg aria-hidden="true" class="w-4 h-4 fill-current" viewBox="0 0 16 16">
+<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+</svg>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-label-sm font-semibold flex-shrink-0">
+        GitHub Zen
+      </span>
+<div class="h-3.5 w-[1px] bg-outline-variant/60 hidden sm:block"></div>
+<p class="font-body-md text-body-md text-on-surface italic truncate transition-opacity duration-300" id="zen-quote-text" style="opacity: 1;">"Design for failure."</p>
+</div>
+<div class="flex items-center gap-1 self-end sm:self-auto flex-shrink-0">
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container-highest/60 transition-all cursor-pointer" id="zen-copy-btn" onclick="copyZenQuote()" title="复制名言">
+<span class="material-symbols-outlined text-[17px]" id="zen-copy-icon">content_copy</span>
+</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container-highest/60 transition-all cursor-pointer" id="zen-refresh-btn" onclick="fetchGitHubZen()" title="获取下一句 Zen">
+<span class="material-symbols-outlined text-[18px]" id="zen-refresh-icon">autorenew</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Top Welcome & Daily Call to Action Hero Card -->
+<!-- Pending AI Agent Alert Banner -->
+<!-- Today's Metric Stat Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md mb-space-lg">
+<!-- Stat 1: Due for Review -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between mb-space-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">今日待复习 · Due</span>
+<span class="font-headline-lg text-headline-lg text-on-surface font-bold mt-1">28</span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">pending_actions</span>
+</div>
+</div>
+<div class="flex flex-col gap-2 pt-2">
+<div class="flex justify-between items-baseline font-label-sm text-label-sm text-on-surface-variant">
+<span class="">进度完成度 0%</span>
+<span class="font-code-inline font-semibold text-on-surface">0 / 28 张</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-500" style="width: 4%"></div>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant pt-1 font-body-sm text-body-sm">
+</div>
+</div>
+</div>
+<!-- Stat 2: Reviewed Today -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between mb-space-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">今日复习数量 · Reviewed</span>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="font-headline-lg text-headline-lg text-on-surface font-bold">14</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-bold">+4 vs 昨日</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-tertiary-fixed/30 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[22px]">check_circle</span>
+</div>
+</div>
+<div class="flex flex-col gap-2 pt-2">
+<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant pt-1">
+<span class="">平均单张答题: 3.6 秒</span>
+<span class="text-tertiary font-medium">状态极佳 ⚡</span>
+</div>
+</div>
+</div>
+<!-- Stat 3: Cards Created & Total Deck -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between mb-space-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">今日新增卡片数量 · Created</span>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="font-headline-lg text-headline-lg text-on-surface font-bold">6</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">张新卡入库</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[22px]">post_add</span>
+</div>
+</div>
+<div class="flex flex-col gap-2 pt-2">
+<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant pt-1">
+<span class="">总卡片容量: 412 张</span>
+<span class="text-primary font-semibold">14 个知识分类</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Calendar Heatmap Activity Section -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm mb-space-lg">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm mb-space-md">
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-primary">calendar_month</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">学习热力图 (Activity Heatmap)</h2>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">过去 1 年共计复习 3,842 次 · 制卡 412 张 ·&nbsp;</span>
+</div>
+<!-- Metric Switcher Pills -->
+<div class="inline-flex p-1 rounded-lg bg-surface-container-low self-start sm:self-auto">
+<button class="px-3 py-1 rounded-md font-label-sm text-label-sm font-semibold bg-surface-container-lowest text-primary shadow-xs transition-all cursor-pointer" id="tab-all" onclick="switchHeatmapFilter('all')">
+          全部事件 (All)
+        </button>
+<button class="px-3 py-1 rounded-md font-label-sm text-label-sm font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer" id="tab-reviews" onclick="switchHeatmapFilter('reviews')">
+          仅复习 (Reviews)
+        </button>
+<button class="px-3 py-1 rounded-md font-label-sm text-label-sm font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer" id="tab-cards" onclick="switchHeatmapFilter('cards')">
+          仅制卡 (Created)
+        </button>
+</div>
+</div>
+<!-- Heatmap visual container -->
+<div class="overflow-x-auto pb-2">
+<div class="min-w-[760px] flex flex-col gap-1.5">
+<!-- Month labels -->
+<div class="grid grid-flow-col auto-cols-fr font-label-sm text-label-sm text-on-surface-variant pl-6 mb-1">
+<span class="">5月</span>
+<span class="">6月</span>
+<span class="">7月</span>
+<span class="">8月</span>
+<span class="">9月</span>
+<span class="">10月</span>
+<span class="">11月</span>
+<span class="">12月</span>
+<span class="">1月</span>
+<span class="">2月</span>
+<span class="">3月</span>
+<span class="">4月</span>
+</div>
+<!-- 7 Days Grid with Day labels -->
+<div class="flex gap-2">
+<div class="flex flex-col justify-between font-label-sm text-label-sm text-on-surface-variant py-0.5 pr-1 select-none">
+<span class="">一</span>
+<span class="">三</span>
+<span class="">五</span>
+<span class="">日</span>
+</div>
+<!-- Heatmap columns (52 weeks rendered programmatically via SVG/CSS grid) -->
+<div class="flex-1 grid grid-flow-col grid-rows-7 gap-1.5" id="heatmap-grid">
+<!-- Simulated 52 columns x 7 days with realistic data variation -->
+<!-- Week 1 - 4 -->
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container-high" title="2023-05-01: 0 events"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim" title="12 events"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container" title="2 events"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed" title="8 events"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-primary-fixed-dim" title="14 events"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container-high"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container text-on-tertiary" title="24 events"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-primary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container-high"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-primary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-primary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container-high"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-primary-fixed"></div>
+<!-- Repeated activity pattern for 30+ visual columns -->
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-primary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container-high"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-primary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-primary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container-high"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-primary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-primary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container-high"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-primary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-primary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container-high"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-primary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container-high"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-primary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-primary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<!-- Recent weeks highlighting strong current streak -->
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-primary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-fixed-dim"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-tertiary-container ring-2 ring-primary"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container-high"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container-high"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container-high"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container-high"></div>
+<div class="w-3.5 h-3.5 rounded-xs bg-surface-container-high"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Heatmap footer / legend -->
+<div class="flex flex-col sm:flex-row items-center justify-between pt-space-sm border-t border-surface-container gap-2">
+<div class="flex items-center gap-2 font-label-sm text-label-sm text-on-surface-variant">
+<span class="inline-flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-xs bg-surface-container-high"></span> 空白
+        </span>
+<span class="inline-flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-xs bg-tertiary-fixed"></span> 1-5 次
+        </span>
+<span class="inline-flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-xs bg-tertiary-fixed-dim"></span> 6-12 次
+        </span>
+<span class="inline-flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-xs bg-tertiary-container"></span> 13-20 次
+        </span>
+<span class="inline-flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-xs bg-primary-container"></span> &gt;20 次极佳
+        </span>
+</div>
+<div class="flex items-center gap-4 font-label-sm text-label-sm text-on-surface-variant">
+<span class="">当前打卡连续: <strong class="text-tertiary">42 天</strong></span>
+<span class="">平均稳定期 (S): <strong class="text-on-surface font-code-inline">14.2d</strong></span>
+</div>
+</div>
+</div>
+<!-- Two-Column Lower Content Area -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg"><!-- Expanded Left Column: AI Agent Proposals Hub (7 cols) -->
+<div class="lg:col-span-7 flex flex-col gap-space-md">
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col">
+<div class="flex items-center justify-between mb-space-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[22px] text-secondary">psychology</span>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">AI Agent 提案中心</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">基于后台模型解析与重叠概念聚类生成的自适应优化建议</p>
+</div>
+</div>
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed font-bold">
+        3 项待审批
+      </span>
+</div>
+<!-- Proposal Cards List -->
+<div class="flex flex-col gap-space-md">
+<!-- Proposal Card 1: Merge Suggestion -->
+<div class="p-space-md rounded-xl bg-surface-container-low/60 border border-surface-container flex flex-col gap-3 transition-all hover:bg-surface-container-low">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded font-label-sm text-label-sm bg-secondary-fixed text-on-secondary-fixed font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">call_merge</span> 合并建议
+            </span>
+<span class="font-code-inline font-label-sm text-label-sm text-on-surface-variant">#PROP-104</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">刚刚</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="font-body-md text-body-md font-semibold text-on-surface">
+            Raft Leader Election 与 Log Replication 差异
+          </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            检测到与现有卡片 <span class="font-code-inline text-primary font-medium">#104</span> 存在高重叠概念。建议合并为双向 Cloze 填空以避免过度稀释记忆间隔并提高上下文检索完整度。
+          </p>
+</div>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-surface-container">
+<div class="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">style</span>
+<span class="">关联卡片: <span class="font-code-inline font-medium text-on-surface">#104, #289</span></span>
+</div>
+<div class="flex items-center gap-2 self-end sm:self-auto">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-lowest border border-surface-container text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm hover:bg-surface-container-high transition-all cursor-pointer">
+              忽略
+            </button>
+<button class="px-3.5 py-1.5 rounded-lg bg-secondary text-on-secondary font-label-sm text-label-sm font-semibold hover:bg-secondary-container transition-all cursor-pointer shadow-xs">
+              批准合并
+            </button>
+</div>
+</div>
+</div>
+<!-- Proposal Card 2: New Card Extraction -->
+<div class="p-space-md rounded-xl bg-surface-container-low/60 border border-surface-container flex flex-col gap-3 transition-all hover:bg-surface-container-low">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span> 新卡提取
+            </span>
+<span class="font-code-inline font-label-sm text-label-sm text-on-surface-variant">#PROP-105</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">25 分钟前</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="font-body-md text-body-md font-semibold text-on-surface">
+            FlashAttention-2: 核心 Tiling 与 Online Softmax 优化
+          </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            自动从近期标记的 arXiv 论文研读笔记提取出 2 组问答及 1 组数学公式挖空卡片，包含 GPU SRAM 分块计算技巧。
+          </p>
+</div>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-surface-container">
+<div class="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">category</span>
+<span class="">类型: <span class="font-medium text-on-surface">Cloze + Q&amp;A (共 3 张)</span></span>
+</div>
+<div class="flex items-center gap-2 self-end sm:self-auto">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-lowest border border-surface-container text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm hover:bg-surface-container-high transition-all cursor-pointer">
+              预览卡片
+            </button>
+<button class="px-3.5 py-1.5 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-semibold hover:bg-primary-container transition-all cursor-pointer shadow-xs">
+              入库 (⌘↵)
+            </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Link -->
+<div class="pt-space-md mt-space-sm flex items-center justify-between border-t border-surface-container">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span> 后台自主调度运行中
+      </span>
+<a class="font-body-sm text-body-sm text-secondary font-semibold hover:underline flex items-center gap-1" data-path="approvals" href="#">
+<span class="">查看全部 3 项待审</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+<!-- Compact Right Column: Topic Review Distribution (5 cols) -->
+<div class="lg:col-span-5 flex flex-col gap-space-md">
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col">
+<div class="flex items-center justify-between mb-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[20px] text-primary">schema</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">今日待复习分类</h2>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-code-inline">4 个专题</span>
+</div>
+<div class="flex flex-col gap-2">
+<!-- Topic Item 1 -->
+<div class="p-space-sm rounded-lg bg-surface hover:bg-surface-container-low transition-all flex items-center justify-between cursor-pointer group">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded-lg bg-error-container text-on-error-container flex items-center justify-center flex-shrink-0 font-label-sm text-label-sm font-bold">
+            D
+          </div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface truncate group-hover:text-primary transition-colors">
+              Distributed Systems / Raft
+            </span>
+</div>
+</div>
+<div class="flex items-center gap-2 flex-shrink-0">
+<span class="font-label-sm text-label-sm font-bold text-on-surface px-2 py-0.5 rounded-full bg-surface-container-high font-code-inline">
+            9 张
+          </span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</div>
+</div>
+<!-- Topic Item 2 -->
+<div class="p-space-sm rounded-lg bg-surface hover:bg-surface-container-low transition-all flex items-center justify-between cursor-pointer group">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high text-primary flex items-center justify-center flex-shrink-0 font-label-sm text-label-sm font-bold">
+            TS
+          </div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface truncate group-hover:text-primary transition-colors">
+              TypeScript 高级类型体操
+            </span>
+</div>
+</div>
+<div class="flex items-center gap-2 flex-shrink-0">
+<span class="font-label-sm text-label-sm font-bold text-on-surface px-2 py-0.5 rounded-full bg-surface-container-high font-code-inline">
+            11 张
+          </span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</div>
+</div>
+<!-- Topic Item 3 -->
+<div class="p-space-sm rounded-lg bg-surface hover:bg-surface-container-low transition-all flex items-center justify-between cursor-pointer group">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded-lg bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center flex-shrink-0 font-label-sm text-label-sm font-bold">
+            ML
+          </div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface truncate group-hover:text-primary transition-colors">
+              Machine Learning / Transformer
+            </span>
+</div>
+</div>
+<div class="flex items-center gap-2 flex-shrink-0">
+<span class="font-label-sm text-label-sm font-bold text-on-surface px-2 py-0.5 rounded-full bg-surface-container-high font-code-inline">
+            8 张
+          </span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</div>
+</div>
+<!-- Topic Item 4: Tomorrow's Queue -->
+<div class="p-space-sm rounded-lg bg-surface-container-low/60 flex items-center justify-between">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container text-on-surface-variant flex items-center justify-center flex-shrink-0 font-label-sm text-label-sm">
+            DB
+          </div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-sm text-body-sm font-medium text-on-surface truncate">
+              Database Internals / LSM Tree
+            </span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant px-2 py-0.5 rounded bg-surface-container-highest">
+          明日队列
+        </span>
+</div>
+</div>
+<!-- Quick Action / Link to Topics -->
+<div class="pt-space-md mt-space-sm flex items-center justify-between border-t border-surface-container">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-code-inline">合计待复习: 28 张</span>
+<a class="font-body-sm text-body-sm text-primary font-semibold hover:underline flex items-center gap-1" data-path="topics" href="#">
+<span class="">管理分类</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</div></div>
+</div>
+<script>
+  // Fallback GitHub Zen quotes in case network/CORS is unavailable
+  const fallbackZenQuotes = [
+    "Mind your words, they are important.",
+    "Design for failure.",
+    "Approachable is better than simple.",
+    "Encourage flow.",
+    "Practicality beats purity.",
+    "Half measures are as bad as nothing at all.",
+    "Favor focus over features.",
+    "Avoid administrative distraction.",
+    "Speak plainly, be heard.",
+    "It's not fully shipped until it's fast."
+  ];
+
+  let currentZen = "Mind your words, they are important.";
+
+  async function fetchGitHubZen() {
+    const quoteEl = document.getElementById('zen-quote-text');
+    const refreshIcon = document.getElementById('zen-refresh-icon');
+
+    if (refreshIcon) {
+      refreshIcon.classList.add('animate-spin');
+    }
+    if (quoteEl) {
+      quoteEl.style.opacity = '0.4';
+    }
+
+    try {
+      const response = await fetch('https://api.github.com/zen', { cache: 'no-cache' });
+      if (!response.ok) throw new Error('Network error');
+      const text = (await response.text()).trim();
+      if (text) {
+        currentZen = text;
+      } else {
+        throw new Error('Empty response');
+      }
+    } catch (e) {
+      // Pick a random fallback different from the current one
+      const remaining = fallbackZenQuotes.filter(q => q !== currentZen);
+      const chosen = remaining[Math.floor(Math.random() * remaining.length)] || fallbackZenQuotes[0];
+      currentZen = chosen;
+    } finally {
+      if (quoteEl) {
+        quoteEl.innerText = `"${currentZen}"`;
+        quoteEl.style.opacity = '1';
+      }
+      if (refreshIcon) {
+        setTimeout(() => {
+          refreshIcon.classList.remove('animate-spin');
+        }, 300);
+      }
+    }
+  }
+
+  function copyZenQuote() {
+    const copyIcon = document.getElementById('zen-copy-icon');
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(currentZen).then(() => {
+        if (copyIcon) {
+          copyIcon.textContent = 'check';
+          setTimeout(() => {
+            copyIcon.textContent = 'content_copy';
+          }, 1500);
+        }
+      }).catch(() => {});
+    }
+  }
+
+  // Load Zen quote on initial page load
+  window.addEventListener('DOMContentLoaded', () => {
+    fetchGitHubZen();
+  });
+
+  function switchHeatmapFilter(type) {
+    const tabs = ['tab-all', 'tab-reviews', 'tab-cards'];
+    tabs.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.className = 'px-3 py-1 rounded-md font-label-sm text-label-sm font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer';
+      }
+    });
+
+    const activeTab = document.getElementById('tab-' + type);
+    if (activeTab) {
+      activeTab.className = 'px-3 py-1 rounded-md font-label-sm text-label-sm font-semibold bg-surface-container-lowest text-primary shadow-xs transition-all cursor-pointer';
+    }
+
+    // Interactive micro-animation to indicate state update on heat grid cells
+    const grid = document.getElementById('heatmap-grid');
+    if (grid) {
+      grid.style.opacity = '0.5';
+      setTimeout(() => {
+        grid.style.opacity = '1';
+      }, 120);
+    }
+  }
+
+  // Keyboard shortcut listener for Space/Enter review CTA
+  document.addEventListener('keydown', function(event) {
+    if ((event.code === 'Space' || event.key === ' ') && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+      event.preventDefault();
+      const reviewLink = document.querySelector('[data-path="review"]');
+      if (reviewLink) {
+        reviewLink.click();
+      }
+    }
+  });
+</script></main></div>
+
+
+</body></html>

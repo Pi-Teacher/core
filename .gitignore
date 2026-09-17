@@ -1,0 +1,13 @@
+# dependencies
+node_modules/
+
+# test
+.test/
+
+# frontend build artifacts
+front/dist/
+*.tsbuildinfo
+
+# documents (private until docs are ready for open source)
+*.md
+*.mmd
