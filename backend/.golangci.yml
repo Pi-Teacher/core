@@ -1,0 +1,51 @@
+version: "2"
+
+run:
+  go: "1.26.7"
+  tests: true
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - contextcheck
+    - errname
+    - errorlint
+    - gocritic
+    - gosec
+    - misspell
+    - noctx
+    - revive
+    - unconvert
+    - unparam
+    - whitespace
+  settings:
+    revive:
+      rules:
+        # 导出符号注释风格由项目自行约定, 不强制 godoc 英文格式.
+        - name: exported
+          disabled: true
+        - name: package-comments
+    gosec:
+      excludes:
+        # Cookie.Secure 故意为 false: HTTP 局域网与 NAS 部署是必须支持的场景,
+        # 跨不可信网络时由反向代理提供 HTTPS.
+        - G124
+    gocritic:
+      disabled-checks:
+        - hugeParam
+    misspell:
+      locale: US
+  exclusions:
+    rules:
+      # 测试代码放宽安全与错误处理检查, 保持用例聚焦行为本身.
+      - path: _test\.go
+        linters:
+          - gosec
+          - errcheck
+          - unparam
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
