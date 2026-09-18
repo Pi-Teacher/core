@@ -47,12 +47,10 @@ func newTestServer(t *testing.T) *testServer {
 
 	// 测试不关心日志内容, 丢弃输出保持测试输出干净.
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	auth := appsvc.NewAuthService(
-		repo.NewAccountRepository(db.DB),
-		repo.NewSessionRepository(db.DB),
-		repo.NewAPIKeyRepository(db.DB),
-		logger,
-	)
+	accountRepo := repo.NewAccountRepository(db.DB)
+	sessionRepo := repo.NewSessionRepository(db.DB)
+	apiKeyRepo := repo.NewAPIKeyRepository(db.DB)
+	auth := appsvc.NewAuthService(accountRepo, sessionRepo, apiKeyRepo, logger)
 	password, created, err := auth.EnsureInitialAccount(ctx)
 	if err != nil {
 		t.Fatalf("ensure account: %v", err)
@@ -61,11 +59,24 @@ func newTestServer(t *testing.T) *testServer {
 		t.Fatal("expected account creation")
 	}
 
+	topicRepo := repo.NewTopicRepository(db.DB)
+	cardRepo := repo.NewCardRepository(db.DB)
+	glossaryRepo := repo.NewGlossaryRepository(db.DB)
+	calendarRepo := repo.NewCalendarRepository(db.DB)
+	topics := appsvc.NewTopicService(db.DB, topicRepo, cardRepo, logger)
+	cards := appsvc.NewCardService(db.DB, cardRepo, topicRepo, calendarRepo, logger, nil)
+	glossaries := appsvc.NewGlossaryService(db.DB, glossaryRepo, logger)
+	trash := appsvc.NewTrashService(db.DB, topicRepo, cardRepo, glossaryRepo, logger)
+
 	handler := httpapi.NewRouter(httpapi.RouterConfig{
-		Auth:      auth,
-		Logger:    logger,
-		DBDriver:  db.Driver,
-		StartedAt: time.Now(),
+		Auth:       auth,
+		Topics:     topics,
+		Cards:      cards,
+		Glossaries: glossaries,
+		Trash:      trash,
+		Logger:     logger,
+		DBDriver:   db.Driver,
+		StartedAt:  time.Now(),
 	})
 	srv := httptest.NewServer(handler)
 	t.Cleanup(srv.Close)

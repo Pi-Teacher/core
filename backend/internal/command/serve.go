@@ -71,6 +71,23 @@ func runServe(ctx context.Context, args []string) error {
 	apiKeyRepo := repo.NewAPIKeyRepository(db.DB)
 	authSvc := appsvc.NewAuthService(accountRepo, sessionRepo, apiKeyRepo, logger)
 
+	topicRepo := repo.NewTopicRepository(db.DB)
+	cardRepo := repo.NewCardRepository(db.DB)
+	glossaryRepo := repo.NewGlossaryRepository(db.DB)
+	calendarRepo := repo.NewCalendarRepository(db.DB)
+	topicSvc := appsvc.NewTopicService(db.DB, topicRepo, cardRepo, logger)
+	// 日历时区每次读设置快照, 修改后立即生效.
+	cardSvc := appsvc.NewCardService(db.DB, cardRepo, topicRepo, calendarRepo, logger, func() *time.Location {
+		name := manager.Snapshot().String("calendar_timezone")
+		loc, err := time.LoadLocation(name)
+		if err != nil {
+			return time.UTC
+		}
+		return loc
+	})
+	glossarySvc := appsvc.NewGlossaryService(db.DB, glossaryRepo, logger)
+	trashSvc := appsvc.NewTrashService(db.DB, topicRepo, cardRepo, glossaryRepo, logger)
+
 	password, created, err := authSvc.EnsureInitialAccount(ctx)
 	if err != nil {
 		return fmt.Errorf("初始化账号: %w", err)
@@ -85,10 +102,14 @@ func runServe(ctx context.Context, args []string) error {
 
 	startedAt := time.Now()
 	router := httpapi.NewRouter(httpapi.RouterConfig{
-		Auth:      authSvc,
-		Logger:    logger,
-		DBDriver:  db.Driver,
-		StartedAt: startedAt,
+		Auth:       authSvc,
+		Topics:     topicSvc,
+		Cards:      cardSvc,
+		Glossaries: glossarySvc,
+		Trash:      trashSvc,
+		Logger:     logger,
+		DBDriver:   db.Driver,
+		StartedAt:  startedAt,
 	})
 
 	srv := &http.Server{
