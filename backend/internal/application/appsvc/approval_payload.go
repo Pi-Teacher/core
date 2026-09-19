@@ -115,6 +115,47 @@ func (p CardUpdatePayload) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m)
 }
 
+// CardMergePayload 对应 card_merge. source_card_ids 恰好两个且互不相同;
+// front/back 缺省按 Q1/Q2 拼接; topic_id 三态; enable_embedding 缺省继承.
+type CardMergePayload struct {
+	SourceCardIDs   []int64       `json:"source_card_ids"`
+	Front           *string       `json:"front"`
+	Back            *string       `json:"back"`
+	TopicID         NullableInt64 `json:"topic_id"`
+	EnableEmbedding *bool         `json:"enable_embedding"`
+}
+
+// ToInput 转为合并服务输入.
+func (p CardMergePayload) ToInput() CardMergeInput {
+	return CardMergeInput{
+		SourceIDs:       p.SourceCardIDs,
+		Front:           p.Front,
+		Back:            p.Back,
+		TopicID:         p.TopicID,
+		EnableEmbedding: p.EnableEmbedding,
+	}
+}
+
+// MarshalJSON 重新编码 payload, 保留 topic_id 三态语义 (缺省省略,
+// 显式 null 写 null, 数字写数字), 让入库 payload 稳定可预期.
+func (p CardMergePayload) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 5)
+	m["source_card_ids"] = p.SourceCardIDs
+	if p.Front != nil {
+		m["front"] = *p.Front
+	}
+	if p.Back != nil {
+		m["back"] = *p.Back
+	}
+	if p.TopicID.Set {
+		m["topic_id"] = p.TopicID.Value
+	}
+	if p.EnableEmbedding != nil {
+		m["enable_embedding"] = *p.EnableEmbedding
+	}
+	return json.Marshal(m)
+}
+
 // CardTrashPayload 对应 card_trash.
 type CardTrashPayload struct {
 	ExpectedVersion *int64 `json:"expected_version"`

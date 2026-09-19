@@ -10,6 +10,7 @@ import (
 	"github.com/Pi-Teacher/server/internal/application/apperr"
 	"github.com/Pi-Teacher/server/internal/application/appsvc"
 	"github.com/Pi-Teacher/server/internal/infrastructure/persistence/model"
+	"github.com/Pi-Teacher/server/internal/infrastructure/persistence/repo"
 	"github.com/Pi-Teacher/server/internal/platform/version"
 )
 
@@ -20,6 +21,8 @@ type RouterConfig struct {
 	Cards        *appsvc.CardService
 	Glossaries   *appsvc.GlossaryService
 	Trash        *appsvc.TrashService
+	Reviews      *appsvc.ReviewService
+	Calendar     *repo.CalendarRepository
 	Approvals    *appsvc.ApprovalService
 	Idempotency  *appsvc.IdempotencyService
 	Settings     *appsvc.SettingsService
@@ -41,6 +44,8 @@ func NewRouter(cfg RouterConfig) http.Handler {
 		Cards:       cfg.Cards,
 		Glossaries:  cfg.Glossaries,
 		Trash:       cfg.Trash,
+		Reviews:     cfg.Reviews,
+		Calendar:    cfg.Calendar,
 		Approvals:   cfg.Approvals,
 		Idempotency: cfg.Idempotency,
 		Settings:    cfg.Settings,
@@ -86,6 +91,14 @@ func NewRouter(cfg RouterConfig) http.Handler {
 	mux.Handle("GET /api/cli/approvals", s.requireCLIAPIKey(http.HandlerFunc(s.handleListCLIApprovals)))
 	mux.Handle("GET /api/cli/approvals/{id}", s.requireCLIAPIKey(http.HandlerFunc(s.handleGetCLIApproval)))
 
+	// --- 复习与日历 ---
+
+	// 复习写端点永远直接生效, 不挂审批分流; CLI 侧仍走幂等中间件.
+	s.registerCRUD(mux, "review/due", "GET", "", s.handleReviewDue, cliWriteSpec{})
+	s.registerCRUD(mux, "review", "POST", "/{card_id}/submit", s.handleReviewSubmit, cliWriteSpec{})
+	// 日历仅 Web, 不提供 CLI 同构.
+	mux.Handle("GET /api/web/calendar", s.requireWebSession(http.HandlerFunc(s.handleCalendar)))
+
 	// --- 领域 CRUD: Web 与 CLI 复用同一组 handler ---
 
 	// Topic. trash-preview 是 WebUI 二次确认专用, 不开放给 CLI.
@@ -106,6 +119,9 @@ func NewRouter(cfg RouterConfig) http.Handler {
 	s.registerCRUD(mux, "cards", "GET", "/{id}", s.handleGetCard, cliWriteSpec{})
 	s.registerCRUD(mux, "cards", "PATCH", "/{id}", s.handleUpdateCard, s.writeSpec(model.OpCardUpdate, s.buildCardUpdate, false))
 	s.registerCRUD(mux, "cards", "POST", "/{id}/trash", s.handleTrashCard, s.writeSpec(model.OpCardTrash, s.buildCardTrash, false))
+	s.registerCRUD(mux, "cards", "POST", "/merge", s.handleMergeCard, s.writeSpec(model.OpCardMerge, s.buildCardMerge, false))
+	// 复习历史仅 Web, 不提供 CLI 同构.
+	mux.Handle("GET /api/web/cards/{id}/reviews", s.requireWebSession(http.HandlerFunc(s.handleCardReviews)))
 
 	// Glossary.
 	s.registerCRUD(mux, "glossary", "GET", "", s.handleListGlossary, cliWriteSpec{})

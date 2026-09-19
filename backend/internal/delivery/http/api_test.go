@@ -75,7 +75,8 @@ func newTestServer(t *testing.T) *testServer {
 		t.Fatalf("refresh settings: %v", err)
 	}
 	topics := appsvc.NewTopicService(db.DB, topicRepo, cardRepo, approvalRepo, logger)
-	cards := appsvc.NewCardService(db.DB, cardRepo, topicRepo, calendarRepo, approvalRepo, logger, nil)
+	cards := appsvc.NewCardService(db.DB, cardRepo, topicRepo, calendarRepo, nil, approvalRepo, logger, nil)
+	reviews := appsvc.NewReviewService(db.DB, cardRepo, calendarRepo, nil, logger, nil)
 	glossaries := appsvc.NewGlossaryService(db.DB, glossaryRepo, approvalRepo, logger)
 	trash := appsvc.NewTrashService(db.DB, topicRepo, cardRepo, glossaryRepo, approvalRepo, logger)
 	approvals := appsvc.NewApprovalService(db.DB, approvalRepo, topicRepo, cardRepo, glossaryRepo,
@@ -89,6 +90,8 @@ func newTestServer(t *testing.T) *testServer {
 		Cards:       cards,
 		Glossaries:  glossaries,
 		Trash:       trash,
+		Reviews:     reviews,
+		Calendar:    calendarRepo,
 		Approvals:   approvals,
 		Idempotency: idempotency,
 		Settings:    settingsSvc,

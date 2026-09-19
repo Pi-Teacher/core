@@ -458,6 +458,21 @@ func (s *ApprovalService) validateTargets(
 			if ver != t.BaseVersion {
 				return staleReasonVersionChanged, nil
 			}
+		case roleSource1, roleSource2:
+			// 合并来源卡: 必须当前正常存在且版本未变, 与 role=target 的非恢复类一致.
+			state, ver, err := s.entityState(ctx, tx, model.EntityCard, t.EntityID)
+			if err != nil {
+				return "", err
+			}
+			if state == stateMissing {
+				return staleReasonDeleted, nil
+			}
+			if state == stateTrashed {
+				return staleReasonTrashed, nil
+			}
+			if ver != t.BaseVersion {
+				return staleReasonVersionChanged, nil
+			}
 		}
 	}
 	return "", nil
@@ -542,7 +557,7 @@ func isRestoreOp(op int16) bool {
 // payload 内的 expected_version: 提案时的版本快照才是权威依据.
 func (s *ApprovalService) execute(ctx context.Context, op int16, targets []model.ApprovalTarget, payload string) error {
 	primaryID, primaryVersion, err := primaryTarget(targets)
-	if err != nil && !isCreateOp(op) {
+	if err != nil && requiresPrimaryTarget(op) {
 		return err
 	}
 	switch op {
@@ -630,8 +645,19 @@ func (s *ApprovalService) execute(ctx context.Context, op int16, targets []model
 		_, err := s.glossarySvc.Restore(ctx, primaryID, primaryVersion)
 		return err
 	case model.OpCardMerge:
-		// 第四批实现; 本批不产生 merge 提案, 防御性返回内部错误.
-		return apperr.New(apperr.CodeInternal, "Card 合并审批尚未实现")
+		var p CardMergePayload
+		if err := decodeProposalPayload(payload, &p); err != nil {
+			return err
+		}
+		// 来源卡以校验过的 targets 为权威依据 (与更新类忽略 payload
+		// expected_version 同一原则), 防止用户改 payload 指向未经校验的卡.
+		sourceIDs, err := mergeSourceIDsFromTargets(targets)
+		if err != nil {
+			return err
+		}
+		p.SourceCardIDs = sourceIDs[:]
+		_, err = s.cardSvc.Merge(ctx, p.ToInput())
+		return err
 	default:
 		return apperr.Newf(apperr.CodeInternal, "未知审批操作 %d", op)
 	}
@@ -647,13 +673,34 @@ func primaryTarget(targets []model.ApprovalTarget) (int64, int64, error) {
 	return 0, 0, apperr.New(apperr.CodeInternal, "审批请求缺少主目标")
 }
 
-// isCreateOp 判断操作是否为新增类 (无主目标).
-func isCreateOp(op int16) bool {
+// mergeSourceIDsFromTargets 按 role=source_1/source_2 取出合并来源卡 ID,
+// 顺序固定. 缺失任一角色视为审批数据损坏按内部错误处理.
+func mergeSourceIDsFromTargets(targets []model.ApprovalTarget) ([2]int64, error) {
+	var ids [2]int64
+	var found [2]bool
+	for _, t := range targets {
+		switch t.Role {
+		case roleSource1:
+			ids[0], found[0] = t.EntityID, true
+		case roleSource2:
+			ids[1], found[1] = t.EntityID, true
+		}
+	}
+	if !found[0] || !found[1] {
+		return ids, apperr.New(apperr.CodeInternal, "合并审批缺少来源卡目标")
+	}
+	return ids, nil
+}
+
+// requiresPrimaryTarget 判断某操作是否依赖 role=target 主目标.
+// 新增类无主目标 (主对象尚未创建); Card 合并依赖两张 role=source_*
+// 来源卡而非单一主目标, 也不取 role=target.
+func requiresPrimaryTarget(op int16) bool {
 	switch op {
-	case model.OpCardCreate, model.OpTopicCreate, model.OpGlossaryCreate:
-		return true
-	default:
+	case model.OpCardCreate, model.OpTopicCreate, model.OpGlossaryCreate, model.OpCardMerge:
 		return false
+	default:
+		return true
 	}
 }
 

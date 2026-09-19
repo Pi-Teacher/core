@@ -12,6 +12,7 @@ import (
 
 	"github.com/Pi-Teacher/server/internal/application/appsvc"
 	httpapi "github.com/Pi-Teacher/server/internal/delivery/http"
+	fsrsadapter "github.com/Pi-Teacher/server/internal/infrastructure/fsrs"
 	"github.com/Pi-Teacher/server/internal/infrastructure/persistence/repo"
 	"github.com/Pi-Teacher/server/internal/platform/config"
 	"github.com/Pi-Teacher/server/internal/platform/database"
@@ -77,16 +78,20 @@ func runServe(ctx context.Context, args []string) error {
 	calendarRepo := repo.NewCalendarRepository(db.DB)
 	approvalRepo := repo.NewApprovalRepository(db.DB)
 	idempotencyRepo := repo.NewIdempotencyRepository(db.DB)
+	// FSRS 调度器由 adapter 提供, 固定参数只存在于 adapter 内.
+	scheduler := fsrsadapter.NewScheduler()
 	topicSvc := appsvc.NewTopicService(db.DB, topicRepo, cardRepo, approvalRepo, logger)
 	// 日历时区每次读设置快照, 修改后立即生效.
-	cardSvc := appsvc.NewCardService(db.DB, cardRepo, topicRepo, calendarRepo, approvalRepo, logger, func() *time.Location {
+	timezone := func() *time.Location {
 		name := manager.Snapshot().String("calendar_timezone")
 		loc, err := time.LoadLocation(name)
 		if err != nil {
 			return time.UTC
 		}
 		return loc
-	})
+	}
+	cardSvc := appsvc.NewCardService(db.DB, cardRepo, topicRepo, calendarRepo, scheduler, approvalRepo, logger, timezone)
+	reviewSvc := appsvc.NewReviewService(db.DB, cardRepo, calendarRepo, scheduler, logger, timezone)
 	glossarySvc := appsvc.NewGlossaryService(db.DB, glossaryRepo, approvalRepo, logger)
 	trashSvc := appsvc.NewTrashService(db.DB, topicRepo, cardRepo, glossaryRepo, approvalRepo, logger)
 	approvalSvc := appsvc.NewApprovalService(db.DB, approvalRepo, topicRepo, cardRepo, glossaryRepo,
@@ -125,6 +130,8 @@ func runServe(ctx context.Context, args []string) error {
 		Cards:       cardSvc,
 		Glossaries:  glossarySvc,
 		Trash:       trashSvc,
+		Reviews:     reviewSvc,
+		Calendar:    calendarRepo,
 		Approvals:   approvalSvc,
 		Idempotency: idempotencySvc,
 		Settings:    settingsSvc,

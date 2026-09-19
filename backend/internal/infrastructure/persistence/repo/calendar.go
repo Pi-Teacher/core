@@ -47,3 +47,36 @@ func (r *CalendarRepository) AddCreatedCards(ctx context.Context, day time.Time,
 		UpdatedAt:    now,
 	}).Error
 }
+
+// AddReviewEvents 原子递增某自然日的复习评分计数, 行不存在时插入.
+// created_cards 与 review_events 各自独立累加, 同一行上互不干扰.
+func (r *CalendarRepository) AddReviewEvents(ctx context.Context, day time.Time, delta int64, now time.Time) error {
+	return r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "activity_date"}},
+		DoUpdates: clause.Assignments(map[string]any{
+			"review_events": gorm.Expr("review_events + ?", delta),
+			"updated_at":    now,
+		}),
+	}).Create(&model.Calendar{
+		ActivityDate: day,
+		CreatedCards: 0,
+		ReviewEvents: delta,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	}).Error
+}
+
+// ListRange 返回 [from, to] 闭区间内有数据的日历行, 按日期升序.
+// from/to 已由调用方归一到自然日的 UTC 零点; 无数据的日期不返回,
+// 由前端补零.
+func (r *CalendarRepository) ListRange(ctx context.Context, from, to time.Time) ([]model.Calendar, error) {
+	rows := make([]model.Calendar, 0, 32)
+	err := r.db.WithContext(ctx).Model(&model.Calendar{}).
+		Where("activity_date >= ? AND activity_date <= ?", from, to).
+		Order("activity_date ASC").
+		Find(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}

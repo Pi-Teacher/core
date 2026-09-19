@@ -211,6 +211,47 @@ func (s *ApprovalService) prepare(
 		}
 		return append(targets, topicRefs...), nil
 
+	case model.OpCardMerge:
+		var p CardMergePayload
+		if err := decodeProposalPayload(string(spec.Payload), &p); err != nil {
+			return nil, err
+		}
+		// 提案时就把来源卡当前 version 快照为 base_version, 批准时严格校验;
+		// 任一张来源卡缺失/进回收站/被改动都会让整条请求 stale.
+		ids, err := validateMergeSourceIDs(p.SourceCardIDs)
+		if err != nil {
+			return nil, err
+		}
+		first, err := s.cards.WithTx(tx).Find(ctx, ids[0])
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, apperr.NotFound("来源 Card 不存在")
+			}
+			return nil, err
+		}
+		second, err := s.cards.WithTx(tx).Find(ctx, ids[1])
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, apperr.NotFound("来源 Card 不存在")
+			}
+			return nil, err
+		}
+		// 用与直写相同的规则预解析: Topic 冲突与 embedding 冲突在提案时就
+		// 报错, 不让用户提交一条注定无法批准的请求.
+		if _, err := s.cardSvc.resolveMerge(ctx, tx, p.ToInput(), first, second); err != nil {
+			return nil, err
+		}
+		targets := []model.ApprovalTarget{
+			{EntityType: model.EntityCard, EntityID: first.ID, BaseVersion: first.Version, Role: roleSource1},
+			{EntityType: model.EntityCard, EntityID: second.ID, BaseVersion: second.Version, Role: roleSource2},
+		}
+		// payload 显式引用的 Topic 登记为 role=topic (不校版本).
+		topicRefs, err := s.topicReference(ctx, tx, p.TopicID.Value)
+		if err != nil {
+			return nil, err
+		}
+		return append(targets, topicRefs...), nil
+
 	case model.OpGlossaryCreate:
 		var p GlossaryCreatePayload
 		if err := decodeProposalPayload(string(spec.Payload), &p); err != nil {

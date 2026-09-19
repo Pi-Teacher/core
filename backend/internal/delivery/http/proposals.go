@@ -86,6 +86,12 @@ func (s *Server) buildCardRestore(r *http.Request) ([]appsvc.ProposalSpec, error
 	return []appsvc.ProposalSpec{specOf(model.OpCardRestore, model.EntityCard, id, rawBodyFromContext(r.Context()))}, nil
 }
 
+// buildCardMerge 把 CLI 合并请求原样转成一条 merge 提案.
+// 来源卡 ID 在 payload 内, EntityID 为空 (合并没有单一主对象).
+func (s *Server) buildCardMerge(r *http.Request) ([]appsvc.ProposalSpec, error) {
+	return []appsvc.ProposalSpec{specOf(model.OpCardMerge, model.EntityCard, nil, rawBodyFromContext(r.Context()))}, nil
+}
+
 func (s *Server) buildGlossaryCreate(r *http.Request) ([]appsvc.ProposalSpec, error) {
 	return []appsvc.ProposalSpec{specOf(model.OpGlossaryCreate, model.EntityGlossary, nil, rawBodyFromContext(r.Context()))}, nil
 }

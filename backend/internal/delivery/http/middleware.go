@@ -10,6 +10,7 @@ import (
 	"github.com/Pi-Teacher/server/internal/application/apperr"
 	"github.com/Pi-Teacher/server/internal/application/appsvc"
 	"github.com/Pi-Teacher/server/internal/infrastructure/persistence/model"
+	"github.com/Pi-Teacher/server/internal/infrastructure/persistence/repo"
 )
 
 // SessionCookieName 是 WebUI 的 session cookie 名.
@@ -29,6 +30,8 @@ type Server struct {
 	Cards       *appsvc.CardService
 	Glossaries  *appsvc.GlossaryService
 	Trash       *appsvc.TrashService
+	Reviews     *appsvc.ReviewService
+	Calendar    *repo.CalendarRepository
 	Approvals   *appsvc.ApprovalService
 	Idempotency *appsvc.IdempotencyService
 	Settings    *appsvc.SettingsService

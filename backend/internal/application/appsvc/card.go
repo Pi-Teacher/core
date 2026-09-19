@@ -6,17 +6,18 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/open-spaced-repetition/go-fsrs/v4"
 	"gorm.io/gorm"
 
 	"github.com/Pi-Teacher/server/internal/application/apperr"
 	"github.com/Pi-Teacher/server/internal/domain/card"
+	"github.com/Pi-Teacher/server/internal/domain/schedule"
+	fsrsadapter "github.com/Pi-Teacher/server/internal/infrastructure/fsrs"
 	"github.com/Pi-Teacher/server/internal/infrastructure/persistence"
 	"github.com/Pi-Teacher/server/internal/infrastructure/persistence/model"
 	"github.com/Pi-Teacher/server/internal/infrastructure/persistence/repo"
 )
 
-// CardService 编排 Card 的创建、修改、回收、恢复与永久删除.
+// CardService 编排 Card 的创建、修改、回收、恢复与合并.
 // 建卡事务同时初始化 FSRS 调度并累计 Calendar 制卡数;
 // embedding 任务状态直接保存在 Card 上, 本批只负责置 pending,
 // worker 在第五批接入.
@@ -27,6 +28,8 @@ type CardService struct {
 	calendar *repo.CalendarRepository
 	stale    staleMarker
 	logger   *slog.Logger
+	// scheduler 提供新卡调度初始化; 具体 FSRS 参数只存在于 adapter 内.
+	scheduler schedule.Scheduler
 	// timezone 返回用户配置的日历时区, 用于把 UTC 时刻映射为自然日.
 	// 每次调用读当前快照, 设置变更后立即生效.
 	timezone func() *time.Location
@@ -35,12 +38,14 @@ type CardService struct {
 }
 
 // NewCardService 构造 Card 服务. timezone 为 nil 时按 UTC 处理.
+// scheduler 为 nil 时回退到固定参数调度器 (生产与测试均走该分支).
 // approvals 可选: 为空时不联动审批 stale, 便于不关心审批的场景复用.
 func NewCardService(
 	db *gorm.DB,
 	cards *repo.CardRepository,
 	topics *repo.TopicRepository,
 	calendar *repo.CalendarRepository,
+	scheduler schedule.Scheduler,
 	approvals *repo.ApprovalRepository,
 	logger *slog.Logger,
 	timezone func() *time.Location,
@@ -48,15 +53,19 @@ func NewCardService(
 	if timezone == nil {
 		timezone = func() *time.Location { return time.UTC }
 	}
+	if scheduler == nil {
+		scheduler = fsrsadapter.NewScheduler()
+	}
 	return &CardService{
-		db:       db,
-		cards:    cards,
-		topics:   topics,
-		calendar: calendar,
-		stale:    staleMarker{approvals: approvals},
-		logger:   logger,
-		timezone: timezone,
-		now:      func() time.Time { return persistence.Now() },
+		db:        db,
+		cards:     cards,
+		topics:    topics,
+		calendar:  calendar,
+		stale:     staleMarker{approvals: approvals},
+		logger:    logger,
+		scheduler: scheduler,
+		timezone:  timezone,
+		now:       func() time.Time { return persistence.Now() },
 	}
 }
 
@@ -76,22 +85,22 @@ type CardDetail struct {
 	Schedule *model.CardSchedule
 }
 
-// newSchedule 用 fsrs.NewCard 的初始值构造新卡调度.
+// newSchedule 用调度器的新卡初始值构造新卡调度行.
 // v1 固定空学习步骤, 新卡 state=New, due=now;
-// LastReview 为零值表示未复习, 落库为 NULL.
-func newSchedule(cardID int64, now time.Time) *model.CardSchedule {
-	c := fsrs.NewCard(now)
+// LastReviewAt 为空表示未复习, 落库为 NULL.
+func (s *CardService) newSchedule(cardID int64, now time.Time) *model.CardSchedule {
+	snap := s.scheduler.NewSchedule(now)
 	return &model.CardSchedule{
 		CardID:         cardID,
-		Due:            c.Due,
-		Stability:      c.Stability,
-		Difficulty:     c.Difficulty,
-		ScheduledDays:  int64(c.ScheduledDays),
-		Reps:           int64(c.Reps),
-		Lapses:         int64(c.Lapses),
-		State:          int16(c.State),
-		LastReviewAt:   nil,
-		RemainingSteps: int64(c.RemainingSteps),
+		Due:            snap.Due,
+		Stability:      snap.Stability,
+		Difficulty:     snap.Difficulty,
+		ScheduledDays:  snap.ScheduledDays,
+		Reps:           snap.Reps,
+		Lapses:         snap.Lapses,
+		State:          int16(snap.State),
+		LastReviewAt:   snap.LastReviewAt,
+		RemainingSteps: snap.RemainingSteps,
 		Version:        1,
 		CreatedAt:      now,
 		UpdatedAt:      now,
@@ -165,7 +174,7 @@ func (s *CardService) createInTx(ctx context.Context, tx *gorm.DB, input CardInp
 	if err := cards.Create(ctx, c); err != nil {
 		return nil, err
 	}
-	schedule := newSchedule(c.ID, now)
+	schedule := s.newSchedule(c.ID, now)
 	if err := cards.CreateSchedule(ctx, schedule); err != nil {
 		return nil, err
 	}
@@ -536,7 +545,7 @@ func (s *CardService) restoreInTx(ctx context.Context, tx *gorm.DB, trashedID, e
 	if err := cards.Create(ctx, c); err != nil {
 		return nil, nil, err
 	}
-	schedule := newSchedule(c.ID, now)
+	schedule := s.newSchedule(c.ID, now)
 	if err := cards.CreateSchedule(ctx, schedule); err != nil {
 		return nil, nil, err
 	}

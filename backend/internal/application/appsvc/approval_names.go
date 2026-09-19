@@ -4,11 +4,14 @@ import "github.com/Pi-Teacher/server/internal/infrastructure/persistence/model"
 
 // 审批目标的角色常量. target 是操作主对象; topic 是建卡/改卡 payload
 // 显式引用的 Topic; affected_card 是 Topic 连带回收涉及的在册 Card;
-// source_1/source_2 预留给第四批 Card 合并.
+// source_1/source_2 是 Card 合并提案的两张来源卡.
 const (
 	roleTarget       = "target"
 	roleTopic        = "topic"
 	roleAffectedCard = "affected_card"
+	// roleSource1 / roleSource2 是 Card 合并提案的两张来源卡.
+	roleSource1 = "source_1"
+	roleSource2 = "source_2"
 )
 
 // ApprovalOperationName 返回操作的对外字符串名.

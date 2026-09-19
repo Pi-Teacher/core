@@ -408,3 +408,37 @@ func (s *Server) handleBatchTrashCards(w http.ResponseWriter, r *http.Request) {
 	s.logEntityEvent(r, "card_batch_trashed", "card", count)
 	writeJSON(w, http.StatusOK, map[string]any{"trashed_cards": count})
 }
+
+// mergeCardRequest 是合并 Card 的请求体.
+// topic_id 三态: 缺省继承, null 无 Topic, 数字指定;
+// enable_embedding 缺省继承来源卡, front/back 缺省按 Q1/Q2 拼接.
+type mergeCardRequest struct {
+	SourceCardIDs   []int64       `json:"source_card_ids"`
+	Front           *string       `json:"front"`
+	Back            *string       `json:"back"`
+	TopicID         NullableInt64 `json:"topic_id"`
+	EnableEmbedding *bool         `json:"enable_embedding"`
+}
+
+// handleMergeCard 实现 POST /api/{web,cli}/cards/merge: 合并两张来源卡为
+// 一张新卡, 来源卡进回收站. Web 直写; CLI 按 merge 审批开关分流.
+func (s *Server) handleMergeCard(w http.ResponseWriter, r *http.Request) {
+	var req mergeCardRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, err)
+		return
+	}
+	detail, err := s.Cards.Merge(r.Context(), appsvc.CardMergeInput{
+		SourceIDs:       req.SourceCardIDs,
+		Front:           req.Front,
+		Back:            req.Back,
+		TopicID:         req.TopicID,
+		EnableEmbedding: req.EnableEmbedding,
+	})
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	s.logEntityEvent(r, "card_merged", "card", detail.Card.ID)
+	writeJSON(w, http.StatusCreated, cardDetailToResponse(detail))
+}

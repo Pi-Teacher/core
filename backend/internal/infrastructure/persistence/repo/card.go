@@ -6,6 +6,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/Pi-Teacher/server/internal/infrastructure/persistence"
 	"github.com/Pi-Teacher/server/internal/infrastructure/persistence/model"
 )
 
@@ -140,6 +141,113 @@ func (r *CardRepository) DeleteSchedule(ctx context.Context, cardID int64) error
 // DeleteReviewLogs 物理删除 Card 的全部复习日志, 回收时使用.
 func (r *CardRepository) DeleteReviewLogs(ctx context.Context, cardID int64) error {
 	return r.db.WithContext(ctx).Where("card_id = ?", cardID).Delete(&model.ReviewLog{}).Error
+}
+
+// DueCard 是复习队列视图: 正常 Card 与其调度快照的联表结果.
+// 用扁平结构而不是嵌入两个模型, 避免 card 与 card_schedule 的
+// version/created_at/updated_at 等同名列在扫描时相互覆盖.
+// 该结构不落库, 只供到期队列响应用.
+type DueCard struct {
+	CardID          int64
+	Front           string
+	Back            string
+	TopicID         *int64
+	CardVersion     int64
+	Due             time.Time
+	State           int16
+	ScheduleVersion int64
+	Reps            int64
+	Lapses          int64
+}
+
+// ListDue 返回到期 (due <= now) 的正常 Card, 按 due 升序 (最逾期在前),
+// topicID 为 nil 时不过滤, 指向 0 时只取无 Topic 的卡. limit 由调用方
+// 保证为正且在上限内. 无外键, 因此显式手写 card ⟕ card_schedule 的联表.
+func (r *CardRepository) ListDue(ctx context.Context, topicID *int64, now time.Time, limit int) ([]DueCard, error) {
+	rows := make([]DueCard, 0, limit)
+	err := r.dueBase(ctx, topicID, now).
+		Select("card.id AS card_id, card.front AS front, card.back AS back, " +
+			"card.topic_id AS topic_id, card.version AS card_version, " +
+			"card_schedule.due AS due, card_schedule.state AS state, " +
+			"card_schedule.version AS schedule_version, " +
+			"card_schedule.reps AS reps, card_schedule.lapses AS lapses").
+		Order("card_schedule.due ASC, card.id ASC").
+		Limit(limit).
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
+// CountDue 统计到期正常 Card 数量, 与 ListDue 使用同一筛选条件.
+func (r *CardRepository) CountDue(ctx context.Context, topicID *int64, now time.Time) (int64, error) {
+	var n int64
+	err := r.dueBase(ctx, topicID, now).Count(&n).Error
+	return n, err
+}
+
+// dueBase 构造到期联表的基础查询: Table + Join + 到期与 Topic 筛选,
+// 不含 Select/排序/分页, 供列表与计数各自补全.
+func (r *CardRepository) dueBase(ctx context.Context, topicID *int64, now time.Time) *gorm.DB {
+	q := r.db.WithContext(ctx).Table("card").
+		Joins("JOIN card_schedule ON card_schedule.card_id = card.id").
+		Where("card_schedule.due <= ?", now)
+	switch {
+	case topicID == nil:
+		// 不过滤
+	case *topicID == 0:
+		q = q.Where("card.topic_id IS NULL")
+	default:
+		q = q.Where("card.topic_id = ?", *topicID)
+	}
+	return q
+}
+
+// UpdateScheduleConditional 按 card_id + 期望 version 条件更新调度行,
+// 同时递增 version. 返回 false 表示调度行不存在或版本不匹配 (并发写入).
+// 字段由调用方按 FSRS 结果提供; updated_at 缺省时补充.
+func (r *CardRepository) UpdateScheduleConditional(
+	ctx context.Context,
+	cardID, expectedVersion int64,
+	fields map[string]any,
+) (bool, error) {
+	if _, ok := fields["updated_at"]; !ok {
+		fields["updated_at"] = persistence.Now()
+	}
+	fields["version"] = gorm.Expr("version + 1")
+	res := r.db.WithContext(ctx).Model(&model.CardSchedule{}).
+		Where("card_id = ? AND version = ?", cardID, expectedVersion).
+		Updates(fields)
+	if res.Error != nil {
+		return false, res.Error
+	}
+	return res.RowsAffected == 1, nil
+}
+
+// CreateReviewLog 插入一条复习日志.
+func (r *CardRepository) CreateReviewLog(ctx context.Context, log *model.ReviewLog) error {
+	return r.db.WithContext(ctx).Create(log).Error
+}
+
+// ListReviewLogs 按卡分页返回复习日志, reviewed_at 降序, id 作次序键
+// 保证同秒多条时翻页稳定. 同时返回总数.
+func (r *CardRepository) ListReviewLogs(ctx context.Context, cardID int64, offset, limit int) ([]model.ReviewLog, int64, error) {
+	base := r.db.WithContext(ctx).Model(&model.ReviewLog{}).Where("card_id = ?", cardID)
+	var total int64
+	if err := base.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	rows := make([]model.ReviewLog, 0, limit)
+	err := r.db.WithContext(ctx).Model(&model.ReviewLog{}).
+		Where("card_id = ?", cardID).
+		Order("reviewed_at DESC, id DESC").
+		Offset(offset).Limit(limit).
+		Find(&rows).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	return rows, total, nil
 }
 
 // ListActiveByTopic 返回引用指定 Topic 的全部正常 Card,
