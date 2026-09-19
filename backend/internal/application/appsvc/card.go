@@ -25,6 +25,7 @@ type CardService struct {
 	cards    *repo.CardRepository
 	topics   *repo.TopicRepository
 	calendar *repo.CalendarRepository
+	stale    staleMarker
 	logger   *slog.Logger
 	// timezone 返回用户配置的日历时区, 用于把 UTC 时刻映射为自然日.
 	// 每次调用读当前快照, 设置变更后立即生效.
@@ -34,11 +35,13 @@ type CardService struct {
 }
 
 // NewCardService 构造 Card 服务. timezone 为 nil 时按 UTC 处理.
+// approvals 可选: 为空时不联动审批 stale, 便于不关心审批的场景复用.
 func NewCardService(
 	db *gorm.DB,
 	cards *repo.CardRepository,
 	topics *repo.TopicRepository,
 	calendar *repo.CalendarRepository,
+	approvals *repo.ApprovalRepository,
 	logger *slog.Logger,
 	timezone func() *time.Location,
 ) *CardService {
@@ -50,6 +53,7 @@ func NewCardService(
 		cards:    cards,
 		topics:   topics,
 		calendar: calendar,
+		stale:    staleMarker{approvals: approvals},
 		logger:   logger,
 		timezone: timezone,
 		now:      func() time.Time { return persistence.Now() },
@@ -114,7 +118,7 @@ func (s *CardService) Create(ctx context.Context, input CardInput) (*CardDetail,
 		return nil, err
 	}
 	var detail *CardDetail
-	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err = persistence.RunInTx(ctx, s.db, func(_ context.Context, tx *gorm.DB) error {
 		var txErr error
 		detail, txErr = s.createInTx(ctx, tx, CardInput{
 			TopicID:         input.TopicID,
@@ -266,7 +270,7 @@ func (s *CardService) Update(ctx context.Context, id, expectedVersion int64, pat
 		patch.Back = back
 	}
 	var detail *CardDetail
-	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := persistence.RunInTx(ctx, s.db, func(_ context.Context, tx *gorm.DB) error {
 		var txErr error
 		detail, txErr = s.updateInTx(ctx, tx, id, expectedVersion, patch)
 		return txErr
@@ -378,7 +382,7 @@ func sameInt64Ptr(a, b *int64) bool {
 // Trash 把正常 Card 放入回收站: 复制正反面到 trashed_card, 删除调度与
 // 全部复习日志, 删除正式行. Calendar 历史计数不回退.
 func (s *CardService) Trash(ctx context.Context, id, expectedVersion int64) (int64, error) {
-	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := persistence.RunInTx(ctx, s.db, func(_ context.Context, tx *gorm.DB) error {
 		return s.trashInTx(ctx, tx, id, expectedVersion)
 	})
 	if err != nil {
@@ -400,14 +404,22 @@ func (s *CardService) trashInTx(ctx context.Context, tx *gorm.DB, id, expectedVe
 	if c.Version != expectedVersion {
 		return versionConflict("Card", c.Version)
 	}
-	return trashCardTx(ctx, tx, cards, c, s.now())
+	return trashCardTx(ctx, tx, cards, s.stale, c, s.now())
 }
 
 // trashCardTx 在调用方事务中把一张正常 Card 放入回收站:
 // 复制正反面与元数据到 trashed_card (version 取原 version + 1),
 // 删除调度与全部复习日志, 最后按读取时的 version 条件删除正式行.
 // 条件删除未命中说明读取后被并发修改, 事务回滚由调用方统一处理.
-func trashCardTx(ctx context.Context, tx *gorm.DB, cards *repo.CardRepository, c *model.Card, now time.Time) error {
+// marker 非空时在同一事务中把依赖该卡的 pending 审批标记 stale.
+func trashCardTx(
+	ctx context.Context,
+	tx *gorm.DB,
+	cards *repo.CardRepository,
+	marker staleMarker,
+	c *model.Card,
+	now time.Time,
+) error {
 	trashed := model.TrashedCard{
 		ID:              c.ID,
 		Front:           c.Front,
@@ -434,7 +446,7 @@ func trashCardTx(ctx context.Context, tx *gorm.DB, cards *repo.CardRepository, c
 	if !ok {
 		return persistence.ErrVersionConflict
 	}
-	return nil
+	return marker.markOne(ctx, tx, model.EntityCard, c.ID, staleReasonTrashed, now)
 }
 
 // BatchTrash 在单个事务中整批回收 Card.
@@ -464,7 +476,7 @@ type RestoreCardResult struct {
 func (s *CardService) Restore(ctx context.Context, trashedID, expectedVersion int64, topicID *int64) (*RestoreCardResult, *CardDetail, error) {
 	var result *RestoreCardResult
 	var detail *CardDetail
-	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := persistence.RunInTx(ctx, s.db, func(_ context.Context, tx *gorm.DB) error {
 		var txErr error
 		result, detail, txErr = s.restoreInTx(ctx, tx, trashedID, expectedVersion, topicID)
 		return txErr
@@ -565,7 +577,9 @@ func (s *CardService) ListTrashed(ctx context.Context, page, pageSize int) ([]mo
 
 // DeleteForever 永久删除回收站 Card. 只开放给 Web 会话.
 func (s *CardService) DeleteForever(ctx context.Context, id, expectedVersion int64) error {
-	return s.deleteForeverInTx(ctx, s.db, id, expectedVersion)
+	return persistence.RunInTx(ctx, s.db, func(_ context.Context, tx *gorm.DB) error {
+		return s.deleteForeverInTx(ctx, tx, id, expectedVersion)
+	})
 }
 
 // BatchDeleteForever 在单个事务中整批永久删除回收站 Card.
@@ -584,7 +598,7 @@ func (s *CardService) BatchDeleteForever(ctx context.Context, items []VersionedI
 }
 
 // deleteForeverInTx 按期望 version 条件删除回收站 Card,
-// 未命中时区分不存在与版本不匹配.
+// 未命中时区分不存在与版本不匹配; 删除后把依赖它的 pending 审批标记 stale.
 func (s *CardService) deleteForeverInTx(ctx context.Context, tx *gorm.DB, id, expectedVersion int64) error {
 	cards := s.cards.WithTx(tx)
 	tc, err := cards.FindTrashed(ctx, id)
@@ -604,5 +618,5 @@ func (s *CardService) deleteForeverInTx(ctx context.Context, tx *gorm.DB, id, ex
 	if !ok {
 		return versionConflict("回收站 Card", tc.Version)
 	}
-	return nil
+	return s.stale.markOne(ctx, tx, model.EntityCard, id, staleReasonDeleted, s.now())
 }

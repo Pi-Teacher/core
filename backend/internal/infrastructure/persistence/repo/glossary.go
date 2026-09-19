@@ -60,10 +60,37 @@ func (r *GlossaryRepository) ExistsActiveByTerm(ctx context.Context, term string
 }
 
 // DeleteTrashedByTerm 物理删除同名回收站记录, 创建与改名时用于覆盖.
-func (r *GlossaryRepository) DeleteTrashedByTerm(ctx context.Context, term string) error {
-	return r.db.WithContext(ctx).
+// 返回被删除记录 ID, 供调用方把依赖旧记录的 pending 审批标记 stale.
+func (r *GlossaryRepository) DeleteTrashedByTerm(ctx context.Context, term string) ([]int64, error) {
+	ids := make([]int64, 0, 2)
+	err := r.db.WithContext(ctx).Model(&model.Glossary{}).
 		Where("term = ? AND trashed_at IS NOT NULL", term).
-		Delete(&model.Glossary{}).Error
+		Order("id").Pluck("id", &ids).Error
+	if err != nil {
+		return nil, err
+	}
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	if err := r.db.WithContext(ctx).
+		Where("id IN ?", ids).
+		Delete(&model.Glossary{}).Error; err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
+
+// ListTrashedIDs 返回全部回收站 Glossary 的 ID, 供清空回收站前记录
+// 需要联动 stale 的对象.
+func (r *GlossaryRepository) ListTrashedIDs(ctx context.Context) ([]int64, error) {
+	ids := make([]int64, 0, 16)
+	err := r.db.WithContext(ctx).Model(&model.Glossary{}).
+		Where("trashed_at IS NOT NULL").
+		Order("id").Pluck("id", &ids).Error
+	if err != nil {
+		return nil, err
+	}
+	return ids, nil
 }
 
 // ListActive 返回正常 Glossary 分页, q 为术语子串搜索,

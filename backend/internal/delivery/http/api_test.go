@@ -18,6 +18,7 @@ import (
 	"github.com/Pi-Teacher/server/internal/infrastructure/persistence/repo"
 	"github.com/Pi-Teacher/server/internal/platform/config"
 	"github.com/Pi-Teacher/server/internal/platform/database"
+	"github.com/Pi-Teacher/server/internal/platform/settings"
 )
 
 // testServer 基于临时 SQLite 文件组装一个完成迁移的服务端实例.
@@ -63,20 +64,37 @@ func newTestServer(t *testing.T) *testServer {
 	cardRepo := repo.NewCardRepository(db.DB)
 	glossaryRepo := repo.NewGlossaryRepository(db.DB)
 	calendarRepo := repo.NewCalendarRepository(db.DB)
-	topics := appsvc.NewTopicService(db.DB, topicRepo, cardRepo, logger)
-	cards := appsvc.NewCardService(db.DB, cardRepo, topicRepo, calendarRepo, logger, nil)
-	glossaries := appsvc.NewGlossaryService(db.DB, glossaryRepo, logger)
-	trash := appsvc.NewTrashService(db.DB, topicRepo, cardRepo, glossaryRepo, logger)
+	approvalRepo := repo.NewApprovalRepository(db.DB)
+	idempotencyRepo := repo.NewIdempotencyRepository(db.DB)
+	settingsRepo := repo.NewSettingsRepository(db.DB)
+	if err := settingsRepo.EnsureDefaults(ctx); err != nil {
+		t.Fatalf("ensure settings: %v", err)
+	}
+	manager := settings.NewManager(settingsRepo)
+	if err := manager.Refresh(ctx); err != nil {
+		t.Fatalf("refresh settings: %v", err)
+	}
+	topics := appsvc.NewTopicService(db.DB, topicRepo, cardRepo, approvalRepo, logger)
+	cards := appsvc.NewCardService(db.DB, cardRepo, topicRepo, calendarRepo, approvalRepo, logger, nil)
+	glossaries := appsvc.NewGlossaryService(db.DB, glossaryRepo, approvalRepo, logger)
+	trash := appsvc.NewTrashService(db.DB, topicRepo, cardRepo, glossaryRepo, approvalRepo, logger)
+	approvals := appsvc.NewApprovalService(db.DB, approvalRepo, topicRepo, cardRepo, glossaryRepo,
+		topics, cards, glossaries, logger)
+	idempotency := appsvc.NewIdempotencyService(db.DB, idempotencyRepo, logger)
+	settingsSvc := appsvc.NewSettingsService(manager, nil)
 
 	handler := httpapi.NewRouter(httpapi.RouterConfig{
-		Auth:       auth,
-		Topics:     topics,
-		Cards:      cards,
-		Glossaries: glossaries,
-		Trash:      trash,
-		Logger:     logger,
-		DBDriver:   db.Driver,
-		StartedAt:  time.Now(),
+		Auth:        auth,
+		Topics:      topics,
+		Cards:       cards,
+		Glossaries:  glossaries,
+		Trash:       trash,
+		Approvals:   approvals,
+		Idempotency: idempotency,
+		Settings:    settingsSvc,
+		Logger:      logger,
+		DBDriver:    db.Driver,
+		StartedAt:   time.Now(),
 	})
 	srv := httptest.NewServer(handler)
 	t.Cleanup(srv.Close)

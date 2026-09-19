@@ -6,6 +6,8 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/Pi-Teacher/server/internal/infrastructure/persistence"
+	"github.com/Pi-Teacher/server/internal/infrastructure/persistence/model"
 	"github.com/Pi-Teacher/server/internal/infrastructure/persistence/repo"
 )
 
@@ -17,15 +19,18 @@ type TrashService struct {
 	topics     *repo.TopicRepository
 	cards      *repo.CardRepository
 	glossaries *repo.GlossaryRepository
+	stale      staleMarker
 	logger     *slog.Logger
 }
 
 // NewTrashService 构造回收站服务.
+// approvals 可选: 为空时不联动审批 stale.
 func NewTrashService(
 	db *gorm.DB,
 	topics *repo.TopicRepository,
 	cards *repo.CardRepository,
 	glossaries *repo.GlossaryRepository,
+	approvals *repo.ApprovalRepository,
 	logger *slog.Logger,
 ) *TrashService {
 	return &TrashService{
@@ -33,6 +38,7 @@ func NewTrashService(
 		topics:     topics,
 		cards:      cards,
 		glossaries: glossaries,
+		stale:      staleMarker{approvals: approvals},
 		logger:     logger,
 	}
 }
@@ -47,9 +53,23 @@ type EmptyTrashResult struct {
 // Empty 在一个事务中删除当时的全部回收站对象.
 // Card 的调度与复习日志在进入回收站时已清理, Topic 的关联在进入
 // 回收站时已清空, 因此这里只需删除三类回收站行.
+// 删除前先记下各表 ID, 删除后把依赖它们的 pending 审批标记 stale.
 func (s *TrashService) Empty(ctx context.Context) (*EmptyTrashResult, error) {
 	result := &EmptyTrashResult{}
-	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := persistence.RunInTx(ctx, s.db, func(_ context.Context, tx *gorm.DB) error {
+		now := persistence.Now()
+		cardIDs, err := s.cards.WithTx(tx).ListTrashedIDs(ctx)
+		if err != nil {
+			return err
+		}
+		topicIDs, err := s.topics.WithTx(tx).ListTrashedIDs(ctx)
+		if err != nil {
+			return err
+		}
+		glossaryIDs, err := s.glossaries.WithTx(tx).ListTrashedIDs(ctx)
+		if err != nil {
+			return err
+		}
 		cards, err := s.cards.WithTx(tx).DeleteAllTrashed(ctx)
 		if err != nil {
 			return err
@@ -60,6 +80,15 @@ func (s *TrashService) Empty(ctx context.Context) (*EmptyTrashResult, error) {
 		}
 		glossaries, err := s.glossaries.WithTx(tx).DeleteAllTrashed(ctx)
 		if err != nil {
+			return err
+		}
+		if err := s.stale.mark(ctx, tx, model.EntityCard, cardIDs, staleReasonDeleted, now); err != nil {
+			return err
+		}
+		if err := s.stale.mark(ctx, tx, model.EntityTopic, topicIDs, staleReasonDeleted, now); err != nil {
+			return err
+		}
+		if err := s.stale.mark(ctx, tx, model.EntityGlossary, glossaryIDs, staleReasonDeleted, now); err != nil {
 			return err
 		}
 		result.Cards = cards

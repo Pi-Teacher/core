@@ -259,3 +259,15 @@ func (r *CardRepository) DeleteAllTrashed(ctx context.Context) (int64, error) {
 		Delete(&model.TrashedCard{})
 	return res.RowsAffected, res.Error
 }
+
+// ListTrashedIDs 返回全部回收站 Card 的 ID, 供清空回收站前记录
+// 需要联动 stale 的对象. 回收站 Card 的行 ID 即原 Card ID.
+func (r *CardRepository) ListTrashedIDs(ctx context.Context) ([]int64, error) {
+	ids := make([]int64, 0, 16)
+	err := r.db.WithContext(ctx).Model(&model.TrashedCard{}).
+		Order("id").Pluck("id", &ids).Error
+	if err != nil {
+		return nil, err
+	}
+	return ids, nil
+}

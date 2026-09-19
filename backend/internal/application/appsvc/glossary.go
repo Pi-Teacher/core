@@ -19,20 +19,24 @@ import (
 type GlossaryService struct {
 	db         *gorm.DB
 	glossaries *repo.GlossaryRepository
+	stale      staleMarker
 	logger     *slog.Logger
 	// now 集中提供当前 UTC 时间, 便于测试替换.
 	now func() time.Time
 }
 
 // NewGlossaryService 构造 Glossary 服务.
+// approvals 可选: 为空时不联动审批 stale, 便于不关心审批的场景复用.
 func NewGlossaryService(
 	db *gorm.DB,
 	glossaries *repo.GlossaryRepository,
+	approvals *repo.ApprovalRepository,
 	logger *slog.Logger,
 ) *GlossaryService {
 	return &GlossaryService{
 		db:         db,
 		glossaries: glossaries,
+		stale:      staleMarker{approvals: approvals},
 		logger:     logger,
 		now:        func() time.Time { return persistence.Now() },
 	}
@@ -55,7 +59,7 @@ func (s *GlossaryService) Create(ctx context.Context, input GlossaryInput) (*mod
 		return nil, err
 	}
 	var created *model.Glossary
-	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err = persistence.RunInTx(ctx, s.db, func(_ context.Context, tx *gorm.DB) error {
 		var txErr error
 		created, txErr = s.createInTx(ctx, tx, term, definition)
 		return txErr
@@ -75,7 +79,11 @@ func (s *GlossaryService) createInTx(ctx context.Context, tx *gorm.DB, term, def
 	} else if exists {
 		return nil, apperr.Conflict(apperr.CodeNameConflict, "同名 Glossary 已存在")
 	}
-	if err := glossaries.DeleteTrashedByTerm(ctx, term); err != nil {
+	deleted, err := glossaries.DeleteTrashedByTerm(ctx, term)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.stale.mark(ctx, tx, model.EntityGlossary, deleted, staleReasonOverwritten, s.now()); err != nil {
 		return nil, err
 	}
 	now := s.now()
@@ -171,7 +179,7 @@ func (s *GlossaryService) Update(ctx context.Context, id, expectedVersion int64,
 		definition = &v
 	}
 	var updated *model.Glossary
-	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := persistence.RunInTx(ctx, s.db, func(_ context.Context, tx *gorm.DB) error {
 		glossaries := s.glossaries.WithTx(tx)
 		g, err := glossaries.FindActive(ctx, id)
 		if err != nil {
@@ -187,7 +195,11 @@ func (s *GlossaryService) Update(ctx context.Context, id, expectedVersion int64,
 			} else if exists {
 				return apperr.Conflict(apperr.CodeNameConflict, "同名 Glossary 已存在")
 			}
-			if err := glossaries.DeleteTrashedByTerm(ctx, *term); err != nil {
+			deleted, err := glossaries.DeleteTrashedByTerm(ctx, *term)
+			if err != nil {
+				return err
+			}
+			if err := s.stale.mark(ctx, tx, model.EntityGlossary, deleted, staleReasonOverwritten, s.now()); err != nil {
 				return err
 			}
 			fields["term"] = *term
@@ -216,7 +228,7 @@ func (s *GlossaryService) Update(ctx context.Context, id, expectedVersion int64,
 
 // Trash 把正常 Glossary 放入回收站.
 func (s *GlossaryService) Trash(ctx context.Context, id, expectedVersion int64) error {
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	return persistence.RunInTx(ctx, s.db, func(_ context.Context, tx *gorm.DB) error {
 		return s.trashInTx(ctx, tx, id, expectedVersion)
 	})
 }
@@ -239,7 +251,7 @@ func (s *GlossaryService) trashInTx(ctx context.Context, tx *gorm.DB, id, expect
 		}
 		return err
 	}
-	return nil
+	return s.stale.markOne(ctx, tx, model.EntityGlossary, id, staleReasonTrashed, s.now())
 }
 
 // BatchTrash 在单个事务中整批回收 Glossary.
@@ -266,7 +278,7 @@ func (s *GlossaryService) ListTrashed(ctx context.Context, page, pageSize int) (
 // Restore 把回收站 Glossary 恢复为正常对象, 同名冲突返回 name_conflict.
 func (s *GlossaryService) Restore(ctx context.Context, id, expectedVersion int64) (*model.Glossary, error) {
 	var restored *model.Glossary
-	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := persistence.RunInTx(ctx, s.db, func(_ context.Context, tx *gorm.DB) error {
 		var txErr error
 		restored, txErr = s.restoreInTx(ctx, tx, id, expectedVersion)
 		return txErr
@@ -323,7 +335,9 @@ func (s *GlossaryService) BatchRestore(ctx context.Context, items []VersionedIte
 
 // DeleteForever 永久删除回收站 Glossary. 只开放给 Web 会话.
 func (s *GlossaryService) DeleteForever(ctx context.Context, id, expectedVersion int64) error {
-	return s.deleteForeverInTx(ctx, s.db, id, expectedVersion)
+	return persistence.RunInTx(ctx, s.db, func(_ context.Context, tx *gorm.DB) error {
+		return s.deleteForeverInTx(ctx, tx, id, expectedVersion)
+	})
 }
 
 // BatchDeleteForever 在单个事务中整批永久删除回收站 Glossary.
@@ -362,5 +376,5 @@ func (s *GlossaryService) deleteForeverInTx(ctx context.Context, tx *gorm.DB, id
 	if !ok {
 		return versionConflict("Glossary", g.Version)
 	}
-	return nil
+	return s.stale.markOne(ctx, tx, model.EntityGlossary, id, staleReasonDeleted, s.now())
 }

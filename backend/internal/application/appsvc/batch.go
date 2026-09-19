@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/Pi-Teacher/server/internal/application/apperr"
+	"github.com/Pi-Teacher/server/internal/infrastructure/persistence"
 )
 
 // BatchMaxItems 是单次批量请求的项目上限, 与 API 设计的批量语义一致.
@@ -15,6 +16,8 @@ const BatchMaxItems = 100
 // 并把失败项目的下标附加到错误的 details.index, 让客户端精确定位.
 //
 // 空批与超上限在开事务前拒绝, 避免无意义的事务开销.
+// ctx 已携带事务时 (CLI 写请求的幂等包装) 直接复用, 保证整批
+// 领域修改与幂等记录/审批提案同一事务.
 func runBatch[T any](ctx context.Context, db *gorm.DB, items []T, fn func(tx *gorm.DB, item T) error) error {
 	if len(items) == 0 {
 		return apperr.Validation("items 不能为空").WithDetails(map[string]any{"field": "items"})
@@ -23,7 +26,7 @@ func runBatch[T any](ctx context.Context, db *gorm.DB, items []T, fn func(tx *go
 		return apperr.Newf(apperr.CodeValidationError, "批量项目数超过上限 %d", BatchMaxItems).
 			WithDetails(map[string]any{"field": "items"})
 	}
-	return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	return persistence.RunInTx(ctx, db, func(_ context.Context, tx *gorm.DB) error {
 		for i, item := range items {
 			if err := fn(tx, item); err != nil {
 				return withBatchIndex(err, i)

@@ -27,22 +27,26 @@ type TopicService struct {
 	db     *gorm.DB
 	topics *repo.TopicRepository
 	cards  *repo.CardRepository
+	stale  staleMarker
 	logger *slog.Logger
 	// now 集中提供当前 UTC 时间, 便于测试替换.
 	now func() time.Time
 }
 
 // NewTopicService 构造 Topic 服务.
+// approvals 可选: 为空时不联动审批 stale, 便于不关心审批的场景复用.
 func NewTopicService(
 	db *gorm.DB,
 	topics *repo.TopicRepository,
 	cards *repo.CardRepository,
+	approvals *repo.ApprovalRepository,
 	logger *slog.Logger,
 ) *TopicService {
 	return &TopicService{
 		db:     db,
 		topics: topics,
 		cards:  cards,
+		stale:  staleMarker{approvals: approvals},
 		logger: logger,
 		now:    func() time.Time { return persistence.Now() },
 	}
@@ -66,7 +70,7 @@ func (s *TopicService) Create(ctx context.Context, input TopicInput) (*model.Top
 		return nil, err
 	}
 	var created *model.Topic
-	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err = persistence.RunInTx(ctx, s.db, func(_ context.Context, tx *gorm.DB) error {
 		var txErr error
 		created, txErr = s.createInTx(ctx, tx, name, description)
 		return txErr
@@ -86,7 +90,9 @@ func (s *TopicService) createInTx(ctx context.Context, tx *gorm.DB, name, descri
 	} else if exists {
 		return nil, apperr.Conflict(apperr.CodeNameConflict, "同名 Topic 已存在")
 	}
-	if err := topics.DeleteTrashedByName(ctx, name); err != nil {
+	if deleted, err := topics.DeleteTrashedByName(ctx, name); err != nil {
+		return nil, err
+	} else if err := s.stale.mark(ctx, tx, model.EntityTopic, deleted, staleReasonOverwritten, s.now()); err != nil {
 		return nil, err
 	}
 	now := s.now()
@@ -189,7 +195,7 @@ func (s *TopicService) Update(ctx context.Context, id, expectedVersion int64, pa
 		description = &v
 	}
 	var updated *repo.TopicRow
-	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := persistence.RunInTx(ctx, s.db, func(_ context.Context, tx *gorm.DB) error {
 		topics := s.topics.WithTx(tx)
 		topic, err := topics.FindActive(ctx, id)
 		if err != nil {
@@ -205,7 +211,11 @@ func (s *TopicService) Update(ctx context.Context, id, expectedVersion int64, pa
 			} else if exists {
 				return apperr.Conflict(apperr.CodeNameConflict, "同名 Topic 已存在")
 			}
-			if err := topics.DeleteTrashedByName(ctx, *name); err != nil {
+			deleted, err := topics.DeleteTrashedByName(ctx, *name)
+			if err != nil {
+				return err
+			}
+			if err := s.stale.mark(ctx, tx, model.EntityTopic, deleted, staleReasonOverwritten, s.now()); err != nil {
 				return err
 			}
 			fields["name"] = *name
@@ -257,7 +267,7 @@ func (s *TopicService) readRow(ctx context.Context, tx *gorm.DB, id int64) (*rep
 // 事务中连带回收, 否则仅解除关联 (topic_id 置空, version 加一);
 // 两种情况下关联卡 version 都恰好增加一次.
 func (s *TopicService) Trash(ctx context.Context, id, expectedVersion int64, includeCards bool) (trashedID, affectedCards int64, err error) {
-	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err = persistence.RunInTx(ctx, s.db, func(_ context.Context, tx *gorm.DB) error {
 		var txErr error
 		affectedCards, txErr = s.trashInTx(ctx, tx, id, expectedVersion, includeCards)
 		return txErr
@@ -304,7 +314,7 @@ func (s *TopicService) trashInTx(ctx context.Context, tx *gorm.DB, id, expectedV
 	now := s.now()
 	if includeCards {
 		for i := range linked {
-			if err := trashCardTx(ctx, tx, cards, &linked[i], now); err != nil {
+			if err := trashCardTx(ctx, tx, cards, s.stale, &linked[i], now); err != nil {
 				return 0, err
 			}
 		}
@@ -321,7 +331,7 @@ func (s *TopicService) trashInTx(ctx context.Context, tx *gorm.DB, id, expectedV
 		}
 		return 0, err
 	}
-	return affected, nil
+	return affected, s.stale.markOne(ctx, tx, model.EntityTopic, id, staleReasonTrashed, now)
 }
 
 // TrashPreview 统计回收影响, 不执行任何修改, 供 WebUI 二次确认.
@@ -379,7 +389,7 @@ func (s *TopicService) ListTrashed(ctx context.Context, page, pageSize int) ([]m
 // 返回 name_conflict, 由用户决定如何处理.
 func (s *TopicService) Restore(ctx context.Context, id, expectedVersion int64) (*model.Topic, error) {
 	var restored *model.Topic
-	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := persistence.RunInTx(ctx, s.db, func(_ context.Context, tx *gorm.DB) error {
 		topics := s.topics.WithTx(tx)
 		topic, err := topics.FindTrashed(ctx, id)
 		if err != nil {
@@ -459,7 +469,9 @@ func (s *TopicService) restoreInTx(ctx context.Context, tx *gorm.DB, id, expecte
 
 // DeleteForever 永久删除回收站 Topic. 只开放给 Web 会话.
 func (s *TopicService) DeleteForever(ctx context.Context, id, expectedVersion int64) error {
-	return s.deleteForeverInTx(ctx, s.db, id, expectedVersion)
+	return persistence.RunInTx(ctx, s.db, func(_ context.Context, tx *gorm.DB) error {
+		return s.deleteForeverInTx(ctx, tx, id, expectedVersion)
+	})
 }
 
 // BatchDeleteForever 在单个事务中整批永久删除回收站 Topic.
@@ -498,7 +510,7 @@ func (s *TopicService) deleteForeverInTx(ctx context.Context, tx *gorm.DB, id, e
 	if !ok {
 		return versionConflict("Topic", topic.Version)
 	}
-	return nil
+	return s.stale.markOne(ctx, tx, model.EntityTopic, id, staleReasonDeleted, s.now())
 }
 
 // versionConflict 构造带当前版本的乐观锁冲突错误, 让调用方重读重试.

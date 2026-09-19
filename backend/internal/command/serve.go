@@ -75,9 +75,11 @@ func runServe(ctx context.Context, args []string) error {
 	cardRepo := repo.NewCardRepository(db.DB)
 	glossaryRepo := repo.NewGlossaryRepository(db.DB)
 	calendarRepo := repo.NewCalendarRepository(db.DB)
-	topicSvc := appsvc.NewTopicService(db.DB, topicRepo, cardRepo, logger)
+	approvalRepo := repo.NewApprovalRepository(db.DB)
+	idempotencyRepo := repo.NewIdempotencyRepository(db.DB)
+	topicSvc := appsvc.NewTopicService(db.DB, topicRepo, cardRepo, approvalRepo, logger)
 	// 日历时区每次读设置快照, 修改后立即生效.
-	cardSvc := appsvc.NewCardService(db.DB, cardRepo, topicRepo, calendarRepo, logger, func() *time.Location {
+	cardSvc := appsvc.NewCardService(db.DB, cardRepo, topicRepo, calendarRepo, approvalRepo, logger, func() *time.Location {
 		name := manager.Snapshot().String("calendar_timezone")
 		loc, err := time.LoadLocation(name)
 		if err != nil {
@@ -85,8 +87,24 @@ func runServe(ctx context.Context, args []string) error {
 		}
 		return loc
 	})
-	glossarySvc := appsvc.NewGlossaryService(db.DB, glossaryRepo, logger)
-	trashSvc := appsvc.NewTrashService(db.DB, topicRepo, cardRepo, glossaryRepo, logger)
+	glossarySvc := appsvc.NewGlossaryService(db.DB, glossaryRepo, approvalRepo, logger)
+	trashSvc := appsvc.NewTrashService(db.DB, topicRepo, cardRepo, glossaryRepo, approvalRepo, logger)
+	approvalSvc := appsvc.NewApprovalService(db.DB, approvalRepo, topicRepo, cardRepo, glossaryRepo,
+		topicSvc, cardSvc, glossarySvc, logger)
+	idempotencySvc := appsvc.NewIdempotencyService(db.DB, idempotencyRepo, logger)
+	settingsSvc := appsvc.NewSettingsService(manager, func(snap *settings.Snapshot) {
+		applyRuntimeSettings(snap, runtimeCfg)
+	})
+
+	// 启动时清理过期幂等记录, 随后定时维护.
+	if removed, err := idempotencySvc.CleanupExpired(ctx); err != nil {
+		logger.WarnContext(logging.WithEvent(ctx, "idempotency_cleanup_failed"),
+			"清理过期幂等记录失败", logging.AttrError, err.Error())
+	} else if removed > 0 {
+		logger.InfoContext(logging.WithEvent(ctx, "idempotency_cleanup"),
+			"启动清理过期幂等记录", "removed", removed)
+	}
+	go runIdempotencyJanitor(ctx, idempotencySvc, logger)
 
 	password, created, err := authSvc.EnsureInitialAccount(ctx)
 	if err != nil {
@@ -102,14 +120,17 @@ func runServe(ctx context.Context, args []string) error {
 
 	startedAt := time.Now()
 	router := httpapi.NewRouter(httpapi.RouterConfig{
-		Auth:       authSvc,
-		Topics:     topicSvc,
-		Cards:      cardSvc,
-		Glossaries: glossarySvc,
-		Trash:      trashSvc,
-		Logger:     logger,
-		DBDriver:   db.Driver,
-		StartedAt:  startedAt,
+		Auth:        authSvc,
+		Topics:      topicSvc,
+		Cards:       cardSvc,
+		Glossaries:  glossarySvc,
+		Trash:       trashSvc,
+		Approvals:   approvalSvc,
+		Idempotency: idempotencySvc,
+		Settings:    settingsSvc,
+		Logger:      logger,
+		DBDriver:    db.Driver,
+		StartedAt:   startedAt,
 	})
 
 	srv := &http.Server{
@@ -157,6 +178,29 @@ func applyRuntimeSettings(snap *settings.Snapshot, dst *atomic.Pointer[logging.R
 		DBEnabled:   snap.Bool("database_log_enabled"),
 		DBLevel:     logging.LevelMapping(snap.String("database_log_level")),
 	})
+}
+
+// idempotencyCleanupInterval 是定时清理过期幂等记录的周期.
+const idempotencyCleanupInterval = time.Hour
+
+// runIdempotencyJanitor 周期清理过期幂等记录, ctx 取消时退出.
+func runIdempotencyJanitor(ctx context.Context, svc *appsvc.IdempotencyService, logger *slog.Logger) {
+	ticker := time.NewTicker(idempotencyCleanupInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if removed, err := svc.CleanupExpired(ctx); err != nil {
+				logger.WarnContext(logging.WithEvent(ctx, "idempotency_cleanup_failed"),
+					"清理过期幂等记录失败", logging.AttrError, err.Error())
+			} else if removed > 0 {
+				logger.InfoContext(logging.WithEvent(ctx, "idempotency_cleanup"),
+					"清理过期幂等记录", "removed", removed)
+			}
+		}
+	}
 }
 
 // applyStartupSets 持久化 --set 设置.

@@ -24,12 +24,15 @@ const CookiePath = "/api/web"
 
 // Server 汇集 handler 共享的依赖.
 type Server struct {
-	Auth       *appsvc.AuthService
-	Topics     *appsvc.TopicService
-	Cards      *appsvc.CardService
-	Glossaries *appsvc.GlossaryService
-	Trash      *appsvc.TrashService
-	Logger     *slog.Logger
+	Auth        *appsvc.AuthService
+	Topics      *appsvc.TopicService
+	Cards       *appsvc.CardService
+	Glossaries  *appsvc.GlossaryService
+	Trash       *appsvc.TrashService
+	Approvals   *appsvc.ApprovalService
+	Idempotency *appsvc.IdempotencyService
+	Settings    *appsvc.SettingsService
+	Logger      *slog.Logger
 	// AllowedOrigins 是 CSRF 来源校验额外接受的来源集合,
 	// 为空时只按请求 Host 匹配.
 	AllowedOrigins map[string]struct{}
@@ -100,20 +103,6 @@ func (s *Server) requireCLIAPIKey(next http.Handler) http.Handler {
 		}
 		ctx := context.WithValue(r.Context(), ctxKeyAPIKey, key)
 		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-// requireIdempotencyKey 要求 CLI 写请求携带 Idempotency-Key 头.
-// 契约从第二批起固定: 幂等重放语义在第三批实现, 但头本身必须
-// 从第一天就强制, 让 agent 尽早养成携带习惯, 避免契约跨版本变化.
-func requireIdempotencyKey(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Idempotency-Key") == "" {
-			writeError(w, apperr.Validation("缺少 Idempotency-Key 请求头").
-				WithDetails(map[string]any{"field": "Idempotency-Key"}))
-			return
-		}
-		next.ServeHTTP(w, r)
 	})
 }
 

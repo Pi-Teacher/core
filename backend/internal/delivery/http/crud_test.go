@@ -284,11 +284,16 @@ func TestSecondBatchWebAcceptance(t *testing.T) {
 	}
 }
 
-// TestCLIDirectWriteAndIdempotencyHeader 覆盖 CLI 验收路径:
-// 直写生效 + 幂等头强制 + 永久删除不开放.
+// TestCLIDirectWriteAndIdempotencyHeader 覆盖 CLI 直写验收路径:
+// 关闭审批后直写生效 + 幂等头强制 + 同 Key 重放 + 永久删除不开放.
 func TestCLIDirectWriteAndIdempotencyHeader(t *testing.T) {
 	ts := newTestServer(t)
 	cli := ts.newCLIClient(t)
+
+	// 0. 关闭全部 CLI 审批开关, 走直写路径 (审批开启时的提案路径由
+	//    approvals_test.go 覆盖).
+	csrf := ts.login()
+	disableCLIApprovals(t, ts, csrf)
 
 	// 1. 缺少 Idempotency-Key 的写请求被拒绝.
 	resp := cli.do(http.MethodPost, "/api/cli/topics",
@@ -317,6 +322,31 @@ func TestCLIDirectWriteAndIdempotencyHeader(t *testing.T) {
 		Version int64 `json:"version"`
 	}
 	decodeBody(t, resp, &topic)
+
+	// 2b. 同 Key 同请求重放首次结果, 不重复创建.
+	resp = cli.do(http.MethodPost, "/api/cli/topics",
+		map[string]any{"name": "CLI Topic"}, "idem-1")
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("cli replay status = %d, want 201", resp.StatusCode)
+	}
+	var replayed struct {
+		ID int64 `json:"id"`
+	}
+	decodeBody(t, resp, &replayed)
+	if replayed.ID != topic.ID {
+		t.Fatalf("replayed topic id = %d, want %d", replayed.ID, topic.ID)
+	}
+
+	// 2c. 同 Key 不同请求返回 409 idempotency_conflict.
+	resp = cli.do(http.MethodPost, "/api/cli/topics",
+		map[string]any{"name": "另一个名字"}, "idem-1")
+	if resp.StatusCode != http.StatusConflict {
+		t.Fatalf("cli different-body same-key status = %d, want 409", resp.StatusCode)
+	}
+	decodeBody(t, resp, &errBody)
+	if errBody.Error.Code != "idempotency_conflict" {
+		t.Fatalf("error code = %s, want idempotency_conflict", errBody.Error.Code)
+	}
 
 	// 3. CLI 建卡与改卡.
 	resp = cli.do(http.MethodPost, "/api/cli/cards", map[string]any{
@@ -360,6 +390,35 @@ func TestCLIDirectWriteAndIdempotencyHeader(t *testing.T) {
 	}, "idem-6")
 	if resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("cli delete forever status = %d, want 404", resp.StatusCode)
+	}
+	resp.Body.Close()
+}
+
+// disableCLIApprovals 通过 PATCH /api/web/settings 关闭全部 CLI 审批开关.
+func disableCLIApprovals(t *testing.T, ts *testServer, csrf string) {
+	t.Helper()
+	patch := map[string]any{}
+	for _, key := range []string{
+		"enable_cli_card_create_approval",
+		"enable_cli_card_update_approval",
+		"enable_cli_card_trash_approval",
+		"enable_cli_card_restore_approval",
+		"enable_cli_card_merge_approval",
+		"enable_cli_topic_create_approval",
+		"enable_cli_topic_update_approval",
+		"enable_cli_topic_trash_approval",
+		"enable_cli_topic_restore_approval",
+		"enable_cli_glossary_create_approval",
+		"enable_cli_glossary_update_approval",
+		"enable_cli_glossary_trash_approval",
+		"enable_cli_glossary_restore_approval",
+	} {
+		patch[key] = false
+	}
+	resp := ts.do(http.MethodPatch, "/api/web/settings", patch,
+		map[string]string{"X-CSRF-Token": csrf})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("patch settings status = %d, want 200", resp.StatusCode)
 	}
 	resp.Body.Close()
 }
